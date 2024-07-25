@@ -102,7 +102,6 @@ def login(session,payload):
                             )
     if response.status_code == 200 and response.json()["result"]["success"]:
         cookies = session.cookies.get_dict()
-        print(cookies)
         return cookies["__Secure-t"]
     return None
 
@@ -157,7 +156,6 @@ def create_request_challenge_payload(challenge_id):
 
 def request_challenge(session,challenge_id):
     payload = create_request_challenge_payload(challenge_id)
-    print(payload)
     try:
         response = session.post(
                                 url     = f"{API_URL}/{PROOF}/v1/challenge-request-dcl",  
@@ -166,10 +164,7 @@ def request_challenge(session,challenge_id):
                                 timeout = 2
                             )
     except requests.exceptions.RequestException as e:
-        print(f"Request failed: {e}")
-        return None
-    if response.status_code != 200:
-        print (response.reason,response.text)
+        logger.Error(f'Request failed: {e}')
         session = None
         return None
     return response.json()
@@ -210,7 +205,6 @@ def main():
         
         # Step 5: Request challenge for each prover
         for prover in provers["provers"]:
-            print(f"\n")
             prover_id = prover["id"].split("/")[1]
             is_ip_v6 = True if prover["id"].split("/")[0] == "IPv6" else False
             latitude = int(prover["claims"]["latitude"] * 10**18)
@@ -228,7 +222,10 @@ def main():
                                                                             )
             for challenge in challenges:
                 if challenge:
-                    print(request_challenge(session,challenge))
+                    logger.info(f'Triggering challenge for {prover_id} with challenge_id: {challenge}')
+                    response = request_challenge(session,challenge)
+                    if response:
+                        logger.info(f'Status of challenge: {response}')
 
 
 if __name__ == "__main__":
