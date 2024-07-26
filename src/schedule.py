@@ -144,7 +144,7 @@ def main(config_file, proof_type,challenger_count=1,tolerance_count=0):
             for challenge in challenges:
                 if challenge:
                     logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
-                    response = request_challenge(sessionapi_config, challenge)
+                    response = request_challenge(session, api_config, challenge)
                 if response:
                     logger.info(f'Status of challenge: {response}')
 
