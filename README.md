@@ -9,6 +9,7 @@ It also includes an example command and notes to ensure proper setup and executi
 ## Prerequisites
 
 - Python 3.6 or higher
+- Ideally 50 Challengers running to challenge the Prover
 
 ## Setup Guide
 
@@ -26,6 +27,7 @@ Export your private key as an environment variable. Make sure not to prefix it w
 ```sh
 export PRIVATE_KEY=<private_key> # Don't prefix with 0x
 ```
+> **Alert:** Make sure to replace `<private_key>` with your actual private key and do not prefix it with `0x`
 
 ### 2. Navigate to the Source Directory
 Change directory to the src directory where the script is located.
@@ -34,10 +36,11 @@ cd src
 ```
 
 ### 3. Run the Script
-Run the pol_schedule.py script with the required arguments. You can ignore warnings by using the -W ignore flag.
+Run the ```schedule.py``` script with the required arguments to trigger a PoL Challenge. You can ignore warnings by using the -W ignore flag.
 
 ```sh
-python -W ignore pol_schedule.py --config_file config/config.json --proof_type pol --challenger_count 2 --tolerance_count 1
+# Sample script to call a PoL challenge
+python -W ignore schedule.py --config_file config/config.json --proof_type pol --challenger_count 50 --tolerance_count 5
 ```
 #### Arguments
     --config_file: The path to the configuration file (default: config/config.json).
