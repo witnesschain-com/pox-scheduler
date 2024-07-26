@@ -1,0 +1,31 @@
+{
+    "api": {
+        "api_url": "https://api.witnesschain.com",
+        "content_type_json": {"content-type": "application/json"}
+    },
+    "chain": {
+        "rpc_url": "https://blue-orangutan-rpc.eu-north-2.gateway.fm",
+        "chain_id": 1237146866,
+        "gas_limit": 2000000,
+        "request_handler" : {
+            "proxy": "0x8A02C91373929a4764F015309B072DC9C9Fabc49",
+            "abi_file_name_with_path": "abi/request_handler.abi"
+        },
+        "prover_registry" : {
+            "proxy": "0x91013d3CecE055603D8b1EE7DCB1f670f480fe24"
+        }  
+    },
+    "proofs": {
+            "pol": {
+                    "number_challengers_default": 2,
+                    "challengers_tolerance_default": 0,
+                    "challenge_timeout_secs_minimum_default": 350,
+                    "attribute_ids": ["pol02"],
+                    "role": "payer",
+                    "project_name": "WITNESS_CHAIN"
+            }
+    },
+    "account": {
+        "key_type": "ethereum"
+    }
+}

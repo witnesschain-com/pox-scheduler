@@ -1,6 +1,7 @@
-from   web3        import Web3, exceptions  
-from   eth_account import Account
-from   eth_utils   import to_bytes
+from   web3                 import Web3, exceptions  
+from   eth_account          import Account
+from   eth_utils            import to_bytes
+from   eth_account.messages import encode_defunct
 import eth_abi
 
 import os
@@ -20,7 +21,13 @@ def connect_to_rpc(rpc_url):
     else:
         print("Failed to connect to Chain. Check your RPC URL.")
         return None
-    
+
+
+def sign_message(message,account):
+    encoded_message = encode_defunct(text=message)
+    signed_message = account.sign_message(encoded_message)
+    return signed_message
+
 
 def submit_transaction(chain_id, connection_rpc, gas_limit, caller_account, contract_address, abi_file, function_name, *params):    
     
