@@ -63,7 +63,7 @@ def get_provers(session,api_config, proof_type):
 
 
 
-def request_challenge(session,api_config, challenge_id):
+def request_challenge(session,api_config, proof_type,challenge_id):
     
     def create_request_challenge_payload(challenge_id):
      return {
@@ -74,7 +74,7 @@ def request_challenge(session,api_config, challenge_id):
     
     try:
         response = session.post(
-                                url     = f"{api_config['api_url']}/v1/challenge-request-dcl",  
+                                url     = f"{api_config['api_url']}/{proof_type}/v1/challenge-request-dcl",  
                                 data    = json.dumps(payload),
                                 verify  = SSL_CONTEXT.check_hostname, 
                                 timeout = 2
