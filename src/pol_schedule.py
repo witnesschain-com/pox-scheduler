@@ -1,6 +1,7 @@
 #### SET PRIVATE_KEY of the payer in your environment variables
 
 import os
+import argparse
 
 from chain import *
 from config.config import Config
@@ -17,7 +18,6 @@ logging.basicConfig(level=logging.INFO,
 # Example usage
 logger = logging.getLogger(__name__)
 
-CONFIG_FILE                = "config/config.json"
 NUM_CHALLENGERS            = 10
 CHALLENGERS_TOLERANCE      = 0
 PAYER_PRIVATE_KEY          = os.getenv('PRIVATE_KEY')
@@ -77,11 +77,9 @@ def submit_on_chain_request_for_challenge(
     return request_id, new_challenges
 
 
-def main():
+def main(config_file, proof_type,challenger_count=1,tolerance_count=0):
 
-    proof_type = "pol"
-
-    config = Config(CONFIG_FILE)
+    config = Config(config_file)
         
     api_config = config.get_api_config()
     chain_config = config.get_chain_config()
@@ -140,8 +138,8 @@ def main():
                                                                                     proof_config,
                                                                                     prover_id,
                                                                                     is_ip_v6,
-                                                                                    NUM_CHALLENGERS,
-                                                                                    CHALLENGERS_TOLERANCE,
+                                                                                    challenger_count,
+                                                                                    tolerance_count,
                                                                                     latitude,
                                                                                     longitude
                                                                                 )
@@ -155,4 +153,22 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='Pass configuration file , proof type, number of challengers and tolerance level')
+    parser.add_argument('--config_file', type=str, help='The path to the configuration file (default: config/config.json) ')
+    parser.add_argument('--proof_type', type=str, help='The type of proof to run: pol / pob (default: pol)')
+    parser.add_argument('--challenger_count', type=int, default=2, help='Total # of challengers that should participate : (default: 2)')
+    parser.add_argument('--tolerance_count', type=int, default=1,help='Minimum # of challengers that should participate : (default: 1) ')
+    
+
+    args = parser.parse_args()
+
+    if not args.config_file:
+        args.config_file = input('Please enter the path to the configuration file (default: config/config.json): ').strip() or 'config/config.json'
+    if not args.proof_type:
+        args.proof_type = input('Please enter the type of proof (pol/pob) to run (default: pol): ').strip() or 'pol'
+    if not args.challenger_count:
+        args.challenger_count = int(input('Max # of challengers that can participate : (Default 2)').strip()) or 2
+    if not args.tolerance_count:
+        args.tolerance_count = int(input('Min # of challengers that can choose not to respond: (Default 1)').strip()) or 1
+
+    main(args.config_file, args.proof_type,args.challenger_count,args.tolerance_count)
