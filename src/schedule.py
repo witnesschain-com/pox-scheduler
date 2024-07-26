@@ -124,32 +124,29 @@ def main(config_file, proof_type,challenger_count=1,tolerance_count=0):
 
         
         # Step 5: Request challenge for each prover
-        for prover in provers["provers"]:
-            
+        for prover in provers["provers"]: 
             prover_id = prover["id"].split("/")[1]
             is_ip_v6 = True if prover["id"].split("/")[0] == "IPv6" else False
             latitude = int(prover["claims"]["latitude"] * 10**18)
             longitude = int(prover["claims"]["longitude"] * 10**18)
-            
-            if prover_id == "0x52374cce1bc1e2cd47c86e64e01bc0fd673c3639":
-                request_id, challenges = submit_on_chain_request_for_challenge(
-                                                                                    account,
-                                                                                    chain_config,
-                                                                                    proof_config,
-                                                                                    prover_id,
-                                                                                    is_ip_v6,
-                                                                                    challenger_count,
-                                                                                    tolerance_count,
-                                                                                    latitude,
-                                                                                    longitude
-                                                                                )
-                logger.info(f'Request ID: {request_id} and challenges : {challenges}')
-                for challenge in challenges:
-                    if challenge:
-                        logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
-                        response = request_challenge(session,api_config, challenge)
-                        if response:
-                            logger.info(f'Status of challenge: {response}')
+            request_id, challenges = submit_on_chain_request_for_challenge(
+                                                                                account,
+                                                                                chain_config,
+                                                                                proof_config,
+                                                                                prover_id,
+                                                                                is_ip_v6,
+                                                                                challenger_count,
+                                                                                tolerance_count,
+                                                                                latitude,
+                                                                                longitude
+                                                                            )
+            logger.info(f'Request ID: {request_id} and challenges :{challenges}')
+            for challenge in challenges:
+                if challenge:
+                    logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
+                    response = request_challenge(sessionapi_config, challenge)
+                if response:
+                    logger.info(f'Status of challenge: {response}')
 
 
 if __name__ == "__main__":
