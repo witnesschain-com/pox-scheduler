@@ -28,6 +28,7 @@ Export your private key as an environment variable. Make sure not to prefix it w
 export PRIVATE_KEY=<private_key> # Don't prefix with 0x
 ```
 > **Alert:** Make sure to replace `<private_key>` with your actual private key and do not prefix it with `0x`
+> **Alert:** Make sure to have funds in your account to trigger the challenge on our Witness Chain
 
 ### 2. Navigate to the Source Directory
 Change directory to the src directory where the script is located.
