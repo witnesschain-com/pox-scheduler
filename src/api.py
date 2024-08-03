@@ -5,6 +5,8 @@ import ssl
 SSL_CONTEXT                = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 SSL_CONTEXT.check_hostname = True
 
+TIMEOUT_SECS = 120
+
 def create_pre_login_payload(ethereum_address, proof_config, account_config, proof_type):
      return {
             "publicKey": ethereum_address,
@@ -26,7 +28,7 @@ def get_pre_login_message(session, api_config, proof_type, payload):
                                 url     = f"{api_config['api_url']}/{proof_type}/v1/pre-login",  
                                 data    = json.dumps(payload),
                                 verify  = SSL_CONTEXT.check_hostname, 
-                                timeout = 2
+                                timeout = TIMEOUT_SECS
                             )
     if response.status_code != 200:
         session = None
@@ -39,7 +41,7 @@ def login(session,api_config, proof_type,payload):
                                 url     = f"{api_config['api_url']}/{proof_type}/v1/login",  
                                 data    = json.dumps(payload),
                                 verify  = SSL_CONTEXT.check_hostname, 
-                                timeout = 2
+                                timeout = TIMEOUT_SECS
                             )
     if response.status_code == 200 and response.json()["result"]["success"]:
        return response
@@ -52,7 +54,7 @@ def get_provers(session,api_config, proof_type):
     response = session.post(
                                 url     = f"{api_config['api_url']}/{proof_type}/v1/provers",  
                                 verify  = SSL_CONTEXT.check_hostname, 
-                                timeout = 2
+                                timeout = TIMEOUT_SECS
                             )
     if response.status_code != 200:
         logger.Error(response.Error)
@@ -77,7 +79,7 @@ def request_challenge(session,api_config, proof_type,challenge_id):
                                 url     = f"{api_config['api_url']}/{proof_type}/v1/challenge-request-dcl",  
                                 data    = json.dumps(payload),
                                 verify  = SSL_CONTEXT.check_hostname, 
-                                timeout = 2
+                                timeout = TIMEOUT_SECS
                             )
     except requests.exceptions.RequestException as e:
         logger.Error(f'Request failed: {e}')

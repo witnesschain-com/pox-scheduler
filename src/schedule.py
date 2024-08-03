@@ -10,18 +10,18 @@ from proof_validations import *
 
 import logging
 
+LOGPATH = "./"
+LOGNAME = LOGPATH+"pox_schedule.log"
 # Configure the logging
-logging.basicConfig(level=logging.INFO,
+logging.basicConfig(filename=LOGNAME,
+                    filemode='a',
+                    level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
-
-# Example usage
 logger = logging.getLogger(__name__)
 
-NUM_CHALLENGERS            = 10
-CHALLENGERS_TOLERANCE      = 0
-PAYER_PRIVATE_KEY          = os.getenv('PRIVATE_KEY')
-
+full_path = os.path.abspath(__file__)
+SRC_PATH=os.path.dirname(full_path)+"/"
 
 def submit_on_chain_request_for_challenge(
                                           account, 
@@ -59,7 +59,7 @@ def submit_on_chain_request_for_challenge(
                                             chain_config["gas_limit"],
                                             account,
                                             chain_config["request_handler"]["proxy"],
-                                            chain_config["request_handler"]["abi_file_name_with_path"],
+                                            SRC_PATH+chain_config["request_handler"]["abi_file_name_with_path"],
                                             "submitRequest",
                                             proof_config["challenge_timeout_secs_minimum_default"],
                                             proof_config["attribute_ids"],
@@ -77,7 +77,7 @@ def submit_on_chain_request_for_challenge(
     return request_id, new_challenges
 
 
-def main(config_file, proof_type,challenger_count=1,tolerance_count=0):
+def main(config_file, proof_type,private_key,prover_to_challenge,challenger_count=1,tolerance_count=0, ):
 
     config = Config(config_file)
         
@@ -88,7 +88,7 @@ def main(config_file, proof_type,challenger_count=1,tolerance_count=0):
 
     validate_inputs(proof_config)
     
-    account = get_web3_account(PAYER_PRIVATE_KEY)
+    account = get_web3_account(private_key)
     
     with requests.Session() as session:
         session.headers.update(api_config["content_type_json"])
@@ -129,24 +129,26 @@ def main(config_file, proof_type,challenger_count=1,tolerance_count=0):
             is_ip_v6 = True if prover["id"].split("/")[0] == "IPv6" else False
             latitude = int(prover["claims"]["latitude"] * 10**18)
             longitude = int(prover["claims"]["longitude"] * 10**18)
-            request_id, challenges = submit_on_chain_request_for_challenge(
-                                                                                account,
-                                                                                chain_config,
-                                                                                proof_config,
-                                                                                prover_id,
-                                                                                is_ip_v6,
-                                                                                challenger_count,
-                                                                                tolerance_count,
-                                                                                latitude,
-                                                                                longitude
-                                                                            )
-            logger.info(f'Request ID: {request_id} and challenges :{challenges}')
-            for challenge in challenges:
-                if challenge:
-                    logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
-                    response = request_challenge(session, api_config, proof_type, challenge)
-                if response:
-                    logger.info(f'Status of challenge: {response}')
+            if prover_id == prover_to_challenge and not is_ip_v6:
+                request_id, challenges = submit_on_chain_request_for_challenge(
+                                                                                    account,
+                                                                                    chain_config,
+                                                                                    proof_config,
+                                                                                    prover_id,
+                                                                                    is_ip_v6,
+                                                                                    challenger_count,
+                                                                                    tolerance_count,
+                                                                                    latitude,
+                                                                                    longitude
+                                                                                )
+                logger.info(f'Request ID: {request_id} and challenges :{challenges}')
+
+                for challenge in challenges:
+                    if challenge:
+                        logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
+                        response = request_challenge(session, api_config, proof_type, challenge)
+                    if response:
+                        logger.info(f'Status of challenge: {response}')
 
 
 if __name__ == "__main__":
@@ -155,6 +157,9 @@ if __name__ == "__main__":
     parser.add_argument('--proof_type', type=str, help='The type of proof to run: pol / pob (default: pol)')
     parser.add_argument('--challenger_count', type=int, default=2, help='Total # of challengers that should participate : (default: 2)')
     parser.add_argument('--tolerance_count', type=int, default=1,help='Minimum # of challengers that should participate : (default: 1) ')
+    parser.add_argument('--private_key', type=str, help='Private key of the payer : ')
+    parser.add_argument('--prover', type=str, help='Prover''s address to challenge : ')
+
     
 
     args = parser.parse_args()
@@ -167,5 +172,9 @@ if __name__ == "__main__":
         args.challenger_count = int(input('Max # of challengers that can participate : (Default 2)').strip()) or 2
     if not args.tolerance_count:
         args.tolerance_count = int(input('Min # of challengers that can choose not to respond: (Default 1)').strip()) or 1
+    if not args.private_key:
+        args.private_key = input('Please enter the private key of the payer: ').strip()
+    if not args.prover:
+        args.prover = input('Please enter the prover to challenge: ').strip()
 
-    main(args.config_file, args.proof_type,args.challenger_count,args.tolerance_count)
+    main(args.config_file, args.proof_type,args.private_key,args.prover,args.challenger_count,args.tolerance_count,)
