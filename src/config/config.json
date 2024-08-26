@@ -20,7 +20,7 @@
                     "number_challengers_default": 2,
                     "challengers_tolerance_default": 0,
                     "challenge_timeout_secs_minimum_default": 350,
-                    "attribute_ids": ["pol02"],
+                    "attribute_ids": ["pol-v1.witnesschain.com"],
                     "role": "payer",
                     "project_name": "WITNESS_CHAIN"
             },
