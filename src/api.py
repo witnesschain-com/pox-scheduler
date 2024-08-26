@@ -1,6 +1,23 @@
 import requests
 import json
 import ssl
+import os
+
+import logging
+
+LOGPATH = "./"
+LOGNAME = LOGPATH+"pox_schedule.log"
+# Configure the logging
+logging.basicConfig(filename=LOGNAME,
+                    filemode='a',
+                    level=logging.INFO,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+logger = logging.getLogger(__name__)
+
+full_path = os.path.abspath(__file__)
+SRC_PATH=os.path.dirname(full_path)+"/"
+
 
 SSL_CONTEXT                = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 SSL_CONTEXT.check_hostname = True
@@ -25,7 +42,7 @@ def create_pre_login_payload(ethereum_address, proof_config, account_config, pro
 
 def get_pre_login_message(session, api_config, proof_type, payload):
     response = session.post(
-                                url     = f"{api_config['api_url']}/{proof_type}/v1/pre-login",  
+                                url     = f"{api_config['api_url']}/{proof_type}/pre-login",  
                                 data    = json.dumps(payload),
                                 verify  = SSL_CONTEXT.check_hostname, 
                                 timeout = TIMEOUT_SECS
@@ -38,7 +55,7 @@ def get_pre_login_message(session, api_config, proof_type, payload):
 
 def login(session,api_config, proof_type,payload):
     response = session.post(
-                                url     = f"{api_config['api_url']}/{proof_type}/v1/login",  
+                                url     = f"{api_config['api_url']}/{proof_type}/login",  
                                 data    = json.dumps(payload),
                                 verify  = SSL_CONTEXT.check_hostname, 
                                 timeout = TIMEOUT_SECS
@@ -46,18 +63,32 @@ def login(session,api_config, proof_type,payload):
     if response.status_code == 200 and response.json()["result"]["success"]:
        return response
     else: 
-        logger.Error(response.Error)
+        logger.error(response)
         session = None
         return None
 
 def get_provers(session,api_config, proof_type):
     response = session.post(
-                                url     = f"{api_config['api_url']}/{proof_type}/v1/provers",  
+                                url     = f"{api_config['api_url']}/{proof_type}/provers",  
                                 verify  = SSL_CONTEXT.check_hostname, 
                                 timeout = TIMEOUT_SECS
                             )
     if response.status_code != 200:
-        logger.Error(response.Error)
+        logger.error(response)
+        session = None
+        return None   
+    else :
+        return response.json()["result"]
+
+
+def get_user_info(session,api_config, proof_type):
+    response = session.post(
+                                url     = f"{api_config['api_url']}/{proof_type}/user-info",
+                                verify  = SSL_CONTEXT.check_hostname, 
+                                timeout = TIMEOUT_SECS
+                            )
+    if response.status_code != 200:
+        logger.error(response)
         session = None
         return None   
     else :
@@ -76,13 +107,13 @@ def request_challenge(session,api_config, proof_type,challenge_id):
     
     try:
         response = session.post(
-                                url     = f"{api_config['api_url']}/{proof_type}/v1/challenge-request-dcl",  
+                                url     = f"{api_config['api_url']}/{proof_type}/challenge-request-dcl",  
                                 data    = json.dumps(payload),
                                 verify  = SSL_CONTEXT.check_hostname, 
                                 timeout = TIMEOUT_SECS
                             )
     except requests.exceptions.RequestException as e:
-        logger.Error(f'Request failed: {e}')
+        logger.error(f'Request failed: {e}')
         session = None
         return None
     return response.json()

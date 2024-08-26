@@ -23,7 +23,58 @@ logger = logging.getLogger(__name__)
 full_path = os.path.abspath(__file__)
 SRC_PATH=os.path.dirname(full_path)+"/"
 
-def submit_on_chain_request_for_challenge(
+def submit_on_chain_request_for_pob_challenge(
+                                          account, 
+                                          chain_config, 
+                                          proof_config, 
+                                          prover, 
+                                          is_ip_v6, 
+                                          challengers_count, 
+                                          tolerance, 
+                                          bandwidth
+                                        ):
+    
+    connection_to_rpc = connect_to_rpc(chain_config["rpc_url"])
+
+    if not connection_to_rpc:
+        logger.error(f"Unable to connect to {chain_config['rpc_url']}")
+
+    challenge_info = eth_abi.encode (
+        ["address","address","bool","uint256","uint256","int256"],
+        [
+            chain_config["prover_registry"]["proxy"], 
+            prover,
+            is_ip_v6,
+            challengers_count if challengers_count else proof_config["number_challengers_default"],
+            bandwidth,
+            tolerance if tolerance else proof_config["challengers_tolerance_default"],
+        ]
+    )
+
+    receipt,contract = submit_transaction(  
+                                            chain_config["chain_id"], 
+                                            connection_to_rpc,
+                                            chain_config["gas_limit"],
+                                            account,
+                                            chain_config["request_handler"]["proxy"],
+                                            SRC_PATH+chain_config["request_handler"]["abi_file_name_with_path"],
+                                            "submitRequest",
+                                            proof_config["challenge_timeout_secs_minimum_default"],
+                                            proof_config["attribute_ids"],
+                                            [challenge_info]
+                                        )
+    logs = contract.events.RequestProcessed().process_receipt(receipt)
+
+    request_id = 0
+    new_challenges = []
+
+    for log in logs:
+        request_id     = log['args']['requestId']
+        new_challenges = log['args']['newChallenges']
+
+    return request_id, new_challenges
+
+def submit_on_chain_request_for_pol_challenge(
                                           account, 
                                           chain_config, 
                                           proof_config, 
@@ -115,6 +166,13 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
             return None
         logger.info('Login successful')
 
+        # Step 3a: Get Session
+        print("Getting session info: ", session.cookies.get_dict())
+
+        # Step 3b: Get Userinfo
+        result = get_user_info(session, api_config, proof_type)
+        print("Getting user info: ", result)
+
         # Step 4: Get provers
         provers = get_provers(session, api_config, proof_type)
         if not provers:
@@ -127,28 +185,50 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
         for prover in provers["provers"]: 
             prover_id = prover["id"].split("/")[1]
             is_ip_v6 = True if prover["id"].split("/")[0] == "IPv6" else False
-            latitude = int(prover["claims"]["latitude"] * 10**18)
-            longitude = int(prover["claims"]["longitude"] * 10**18)
-            if prover_id == prover_to_challenge and not is_ip_v6:
-                request_id, challenges = submit_on_chain_request_for_challenge(
-                                                                                    account,
-                                                                                    chain_config,
-                                                                                    proof_config,
-                                                                                    prover_id,
-                                                                                    is_ip_v6,
-                                                                                    challenger_count,
-                                                                                    tolerance_count,
-                                                                                    latitude,
-                                                                                    longitude
-                                                                                )
-                logger.info(f'Request ID: {request_id} and challenges :{challenges}')
+            if proof_type == 'pol':
+                latitude = int(prover["claims"]["latitude"] * 10**18)
+                longitude = int(prover["claims"]["longitude"] * 10**18)
+                if prover_id == prover_to_challenge and not is_ip_v6:
+                    request_id, challenges = submit_on_chain_request_for_pol_challenge(
+                                                                                        account,
+                                                                                        chain_config,
+                                                                                        proof_config,
+                                                                                        prover_id,
+                                                                                        is_ip_v6,
+                                                                                        challenger_count,
+                                                                                        tolerance_count,
+                                                                                        latitude,
+                                                                                        longitude
+                                                                                    )
+                    logger.info(f'Request ID: {request_id} and challenges :{challenges}')
 
-                for challenge in challenges:
-                    if challenge:
-                        logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
-                        response = request_challenge(session, api_config, proof_type, challenge)
-                    if response:
-                        logger.info(f'Status of challenge: {response}')
+                    for challenge in challenges:
+                        if challenge:
+                            logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
+                            response = request_challenge(session, api_config, proof_type, challenge)
+                        if response:
+                            logger.info(f'Status of challenge: {response}')
+            else:
+                bandwidth = int(prover["claims"]["bandwidth"])
+                if prover_id == prover_to_challenge and not is_ip_v6:
+                    request_id, challenges = submit_on_chain_request_for_pob_challenge(
+                                                                                        account,
+                                                                                        chain_config,
+                                                                                        proof_config,
+                                                                                        prover_id,
+                                                                                        is_ip_v6,
+                                                                                        challenger_count,
+                                                                                        tolerance_count,
+                                                                                        bandwidth
+                                                                                    )
+                    logger.info(f'Request ID: {request_id} and challenges :{challenges}')
+
+                    for challenge in challenges:
+                        if challenge:
+                            logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
+                            response = request_challenge(session, api_config, proof_type, challenge)
+                        if response:
+                            logger.info(f'Status of challenge: {response}')
 
 
 if __name__ == "__main__":
