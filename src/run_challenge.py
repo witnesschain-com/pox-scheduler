@@ -7,6 +7,7 @@ from chain import *
 from config.config import Config
 from api import * 
 from proof_validations import *
+from hexbytes import HexBytes
 
 import logging
 
@@ -33,17 +34,18 @@ def submit_on_chain_request_for_pob_challenge(
                                           tolerance, 
                                           bandwidth
                                         ):
-    
+    print("Pob called")
     connection_to_rpc = connect_to_rpc(chain_config["rpc_url"])
 
     if not connection_to_rpc:
         logger.error(f"Unable to connect to {chain_config['rpc_url']}")
 
     challenge_info = eth_abi.encode (
-        ["address","address","bool","uint256","uint256","int256"],
+        ["address","address","uint8","bool","uint256","uint256","int256"],
         [
             chain_config["prover_registry"]["proxy"], 
             prover,
+            0,
             is_ip_v6,
             challengers_count if challengers_count else proof_config["number_challengers_default"],
             bandwidth,
@@ -116,6 +118,7 @@ def submit_on_chain_request_for_pol_challenge(
                                             proof_config["attribute_ids"],
                                             [challenge_info]
                                         )
+    print(receipt)
     logs = contract.events.RequestProcessed().process_receipt(receipt)
 
     request_id = 0
@@ -188,7 +191,7 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
             if proof_type == 'pol':
                 latitude = int(prover["claims"]["latitude"] * 10**18)
                 longitude = int(prover["claims"]["longitude"] * 10**18)
-                if prover_id == prover_to_challenge and not is_ip_v6:
+                if prover_id.lower() == prover_to_challenge.lower():
                     request_id, challenges = submit_on_chain_request_for_pol_challenge(
                                                                                         account,
                                                                                         chain_config,
@@ -205,31 +208,36 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
                     for challenge in challenges:
                         if challenge:
                             logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
-                            response = request_challenge(session, api_config, proof_type, challenge)
+                            response = request_challenge(session, api_config, proof_type, prover["id"], challenge)
                         if response:
                             logger.info(f'Status of challenge: {response}')
             else:
-                bandwidth = int(prover["claims"]["bandwidth"])
-                if prover_id == prover_to_challenge and not is_ip_v6:
-                    request_id, challenges = submit_on_chain_request_for_pob_challenge(
-                                                                                        account,
-                                                                                        chain_config,
-                                                                                        proof_config,
-                                                                                        prover_id,
-                                                                                        is_ip_v6,
-                                                                                        challenger_count,
-                                                                                        tolerance_count,
-                                                                                        bandwidth
-                                                                                    )
-                    logger.info(f'Request ID: {request_id} and challenges :{challenges}')
+                try:
+                    bandwidth = int(prover["claims"]["downlink_bandwidth"])
+                    if prover_id == prover_to_challenge:
+                        request_id, challenges = submit_on_chain_request_for_pob_challenge(
+                                                                                            account,
+                                                                                            chain_config,
+                                                                                            proof_config,
+                                                                                            prover_id,
+                                                                                            is_ip_v6,
+                                                                                            challenger_count,
+                                                                                            tolerance_count,
+                                                                                            bandwidth
+                                                                                        )
+                        logger.info(f'Request ID: {request_id} and challenges :{challenges}')
 
-                    for challenge in challenges:
-                        if challenge:
-                            logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
-                            response = request_challenge(session, api_config, proof_type, challenge)
-                        if response:
-                            logger.info(f'Status of challenge: {response}')
-
+                        for challenge in challenges:
+                            if challenge:
+                                logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
+                                response = request_challenge(session, api_config, proof_type, prover["id"], challenge,"downlink")
+                            if response:
+                                logger.info(f'Status of challenge: {response}')
+                except KeyError:
+                    pass
+                except Exception as e:
+                    logger.info("Error triggering for:", prover)
+                    logger.error(e)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Pass configuration file , proof type, number of challengers and tolerance level')
@@ -239,7 +247,6 @@ if __name__ == "__main__":
     parser.add_argument('--tolerance_count', type=int, default=1,help='Minimum # of challengers that should participate : (default: 1) ')
     parser.add_argument('--private_key', type=str, help='Private key of the payer : ')
     parser.add_argument('--prover', type=str, help='Prover''s address to challenge : ')
-
     
 
     args = parser.parse_args()
@@ -253,8 +260,8 @@ if __name__ == "__main__":
     if not args.tolerance_count:
         args.tolerance_count = int(input('Min # of challengers that can choose not to respond: (Default 1)').strip()) or 1
     if not args.private_key:
-        args.private_key = input('Please enter the private key of the payer: ').strip()
+        args.private_key = input('Please enter the private key of the payer: ').strip() or ''
     if not args.prover:
-        args.prover = input('Please enter the prover to challenge: ').strip()
+        args.prover = input('Please enter the prover to challenge: ').strip() or ''
 
     main(args.config_file, args.proof_type,args.private_key,args.prover,args.challenger_count,args.tolerance_count,)

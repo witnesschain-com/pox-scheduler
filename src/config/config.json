@@ -6,7 +6,7 @@
     "chain": {
         "rpc_url": "https://blue-orangutan-rpc.eu-north-2.gateway.fm",
         "chain_id": 1237146866,
-        "gas_limit": 2000000,
+        "gas_limit": 1000000,
         "request_handler" : {
             "proxy": "0x8A02C91373929a4764F015309B072DC9C9Fabc49",
             "abi_file_name_with_path": "abi/request_handler.abi"
@@ -19,7 +19,7 @@
             "pol": {
                     "number_challengers_default": 2,
                     "challengers_tolerance_default": 0,
-                    "challenge_timeout_secs_minimum_default": 350,
+                    "challenge_timeout_secs_minimum_default": 1000000000,
                     "attribute_ids": ["pol-v1.witnesschain.com"],
                     "role": "payer",
                     "project_name": "WITNESS_CHAIN"
