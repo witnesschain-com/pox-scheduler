@@ -22,13 +22,12 @@ git clone https://github.com/witnesschain-com/pox-scheduler.git
 
 ### 1. Set Private Key
 
-Export your private key as an environment variable. Make sure not to prefix it with `0x`.
+Export your private key as an environment variable
 
 ```sh
-export PRIVATE_KEY=<private_key> # Don't prefix with 0x
+export PRIVATE_KEY=<private_key>
 ```
-> **Alert:** Make sure to replace `<private_key>` with your actual private key and do not prefix it with `0x`
-> **Alert:** Make sure to have funds in your account to trigger the challenge on our Witness Chain
+> **Alert:** Make sure to replace `<private_key>`
 
 ### 2. Navigate to the Source Directory
 Change directory to the src directory where the script is located.
@@ -37,17 +36,18 @@ cd src
 ```
 
 ### 3. Run the Script
-Run the ```schedule.py``` script with the required arguments to trigger a PoL Challenge. You can ignore warnings by using the -W ignore flag.
+Run the ```run_challenge.py``` script with the required arguments to trigger a PoL Challenge. You can ignore warnings by using the -W ignore flag.
 
 ```sh
 # Sample script to call a PoL challenge
-python -W ignore schedule.py --config_file config/config.json --proof_type pol --challenger_count 50 --tolerance_count 5
+python run_challenge.py --config_file config/config.json --proof_type pol --challenger_count 1 --private_key $PRIVATE_KEY --prover <PROVER_ADDRESS_TO_RUN_CHALLENGE_FOR>
 ```
 #### Arguments
     --config_file: The path to the configuration file (default: config/config.json).
     --proof_type: The type of proof to retrieve from the configuration (default: pol).
     --challenger_count: The number of challengers (default: 2).
-    --tolerance_count: The tolerance count (default: 1).
+    --private_key: Private Key of the account triggering the challenge
+    --prover: Prover address (0x...)
 
 #### Notes
 Ensure that the ```config.json``` file exists and contains the correct configuration settings.
