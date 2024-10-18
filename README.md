@@ -40,7 +40,7 @@ Run the ```run_challenge.py``` script with the required arguments to trigger a P
 
 ```sh
 # Sample script to call a PoL challenge
-python run_challenge.py --config_file config/config.json --proof_type pol --challenger_count 1 --private_key $PRIVATE_KEY --prover <PROVER_ADDRESS_TO_RUN_CHALLENGE_FOR>
+python run_challenge.py --config_file config/config.json --proof_type pol --challenger_count 2 --private_key $PRIVATE_KEY --prover <PROVER_ADDRESS_TO_RUN_CHALLENGE_FOR>
 ```
 #### Arguments
     --config_file: The path to the configuration file (default: config/config.json).
