@@ -22,7 +22,7 @@ git clone https://github.com/witnesschain-com/pox-scheduler.git
 
 ### 1. Set Private Key
 
-Export your private key as an environment variable
+Export your private key as an environment variable. This is the account that will be signing the "submitRequest" transaction
 
 ```sh
 export PRIVATE_KEY=<private_key>
