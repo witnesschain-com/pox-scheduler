@@ -122,6 +122,10 @@ def request_challenge(session,api_config, proof_type, prover, challenge_id, chal
                                 verify  = SSL_CONTEXT.check_hostname, 
                                 timeout = TIMEOUT_SECS
                             )
+        if response.status_code != 200:
+            logger.error(f'Request failed: {response.reason}')
+            session = None
+            return None
     except requests.exceptions.RequestException as e:
         logger.error(f'Request failed: {e}')
         session = None
