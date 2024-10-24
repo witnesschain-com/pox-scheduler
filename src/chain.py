@@ -46,7 +46,7 @@ def submit_transaction(chain_id, connection_rpc, gas_limit, caller_account, cont
     transaction = contract_function(*params).build_transaction({
       "chainId"  : chain_id, 
       "gas"      : gas_limit,  
-      "gasPrice" : connection_rpc.eth.gas_price,  
+      "gasPrice" : 0,  
       "nonce"    : nonce,
     })
     

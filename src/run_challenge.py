@@ -187,6 +187,7 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
         # Step 5: Request challenge for each prover
         for prover in provers["provers"]: 
             prover_id = prover["id"].split("/")[1]
+            print(prover_id)
             is_ip_v6 = True if prover["id"].split("/")[0] == "IPv6" else False
             if proof_type == 'pol':
                 latitude = int(prover["claims"]["latitude"] * 10**18)
@@ -215,6 +216,7 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
                 try:
                     bandwidth = int(prover["claims"]["downlink_bandwidth"])
                     if prover_id == prover_to_challenge:
+
                         request_id, challenges = submit_on_chain_request_for_pob_challenge(
                                                                                             account,
                                                                                             chain_config,
@@ -247,6 +249,7 @@ if __name__ == "__main__":
     parser.add_argument('--tolerance_count', type=int, default=1,help='Minimum # of challengers that should participate : (default: 1) ')
     parser.add_argument('--private_key', type=str, help='Private key of the payer : ')
     parser.add_argument('--prover', type=str, help='Prover''s address to challenge : ')
+
     
 
     args = parser.parse_args()

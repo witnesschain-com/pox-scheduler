@@ -69,7 +69,13 @@ def login(session,api_config, proof_type,payload):
 
 def get_provers(session,api_config, proof_type):
     response = session.post(
-                                url     = f"{api_config['api_url']}/{proof_type}/provers",  
+                                url     = f"{api_config['api_url']}/{proof_type}/provers",
+                                data    = json.dumps(
+                                    { 
+                                        "skip": 0 ,
+                                        "limit": 10000
+                                    }
+                                    ),
                                 verify  = SSL_CONTEXT.check_hostname, 
                                 timeout = TIMEOUT_SECS
                             )
@@ -123,11 +129,11 @@ def request_challenge(session,api_config, proof_type, prover, challenge_id, chal
                                 timeout = TIMEOUT_SECS
                             )
         if response.status_code != 200:
-            logger.error(f'Request failed: {response.reason}')
+            logger.error(f'Request failed: {response.status_code} : {response.reason} {response.text} ')
             session = None
             return None
     except requests.exceptions.RequestException as e:
-        logger.error(f'Request failed: {e}')
+        logger.error(f'Request failed: {e},  {e.message}')
         session = None
         return None
     return response.json()
@@ -136,19 +142,6 @@ def request_challenge(session,api_config, proof_type, prover, challenge_id, chal
 def get_statistics(session,api_config, proof_type):
     response = session.post(
                                 url     = f"{api_config['api_url']}/{proof_type}/statistics",
-                                verify  = SSL_CONTEXT.check_hostname, 
-                                timeout = TIMEOUT_SECS
-                            )
-    if response.status_code != 200:
-        logger.error(response)
-        session = None
-        return None   
-    else :
-        return response.json()["result"]
-
-def get_provers(session,api_config, proof_type):
-    response = session.post(
-                                url     = f"{api_config['api_url']}/{proof_type}/provers",
                                 verify  = SSL_CONTEXT.check_hostname, 
                                 timeout = TIMEOUT_SECS
                             )
