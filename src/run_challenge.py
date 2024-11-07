@@ -10,8 +10,11 @@ from proof_validations import *
 from hexbytes import HexBytes
 
 import logging
+import time
 
 LOGPATH = "./"
+POLL_STATUS_SECONDS = 10
+
 LOGNAME = LOGPATH+"pox_schedule.log"
 # Configure the logging
 logging.basicConfig(filename=LOGNAME,
@@ -128,6 +131,19 @@ def submit_on_chain_request_for_pol_challenge(
 
     return request_id, new_challenges
 
+def should_run_for_prover(prover, project_name=None, prover_to_challenge=None):
+    # If project name is provided, check if it matches
+    if project_name:
+        return prover["projectName"].lower() == project_name.lower()
+    
+    # If prover_to_challenge is provided, check if it's 'all' or matches specific prover
+    if prover_to_challenge:
+        prover_id = prover.get("id", "").lower()  # Assuming prover ID is stored in 'id' field
+        return (prover_to_challenge.lower() == 'all' or 
+                prover_id == prover_to_challenge.lower())
+    
+    return False
+
 
 def main(config_file, proof_type,private_key,prover_to_challenge,challenger_count=1,tolerance_count=0,project_name='' ):
 
@@ -191,13 +207,8 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
             if proof_type == 'pol':
                 latitude = int(prover["claims"]["latitude"] * 10**18)
                 longitude = int(prover["claims"]["longitude"] * 10**18)
-                print(prover_id,int(prover["claims"]["latitude"]),int(prover["claims"]["longitude"] ))
-                if (project_name and prover["projectName"].lower() == project_name) \
-                   or ( prover_to_challenge and
-                        (
-                            prover_id.lower() == prover_to_challenge.lower() \
-                            or prover_to_challenge.lower() == 'all')
-                        ) :
+                
+                if should_run_for_prover(prover, project_name, prover_to_challenge):
                     request_id, challenges = submit_on_chain_request_for_pol_challenge(
                                                                                         account,
                                                                                         chain_config,
@@ -215,8 +226,15 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
                         if challenge:
                             logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
                             response = request_challenge(session, api_config, proof_type, prover["id"], challenge)
-                        if response:
                             logger.info(f'Status of challenge: {response}')
+                            if response:
+                                challenge_id = response["result"]["challenge_id"]
+                                response = get_challenge_status(session, api_config, proof_type, challenge_id)
+                                logger.info(f'Status of challenge: {response}')
+                                while response["state"] not in ["ENDED_SUCCESSFULLY","ENDED_WITH_PARTIAL_SUCCESS", "ERROR_NOT_ENOUGH_CHALLENGERS","ERROR_ENDED_WITH_FAILURE"]:
+                                    time.sleep(POLL_STATUS_SECONDS)
+                                    response = get_challenge_status(session, api_config, proof_type, challenge_id)
+                                    logger.info(f'Status of challenge: { { "challenge_id":challenge_id,"status":response["state"] }}')
             else:
                 try:
                     bandwidth = int(prover["claims"]["downlink_bandwidth"])
@@ -251,10 +269,10 @@ if __name__ == "__main__":
     parser.add_argument('--config_file', type=str, help='The path to the configuration file (default: config/config.json) ')
     parser.add_argument('--proof_type', type=str, help='The type of proof to run: pol / pob (default: pol)')
     parser.add_argument('--challenger_count', type=int, default=2, help='Total # of challengers that should participate : (default: 2)')
-    parser.add_argument('--tolerance_count', type=int, default=1,help='Minimum # of challengers that should participate : (default: 1) ')
+    parser.add_argument('--tolerance_count', type=int, default=1,help='Minimum # of challengers that should participate : (default: 1)')
     parser.add_argument('--private_key', type=str, help='Private key of the payer : ')
-    parser.add_argument('--prover', type=str, help='Prover''s address to challenge : ')
-    parser.add_argument('--project_name', type=str, help='Prover''s project name : ')
+    parser.add_argument('--prover', type=str, default='all', help='Prover''s address to challenge : (default: all )')
+    parser.add_argument('--project_name', type=str, default='all', help='Prover''s project name : ')
 
     
 
@@ -270,10 +288,10 @@ if __name__ == "__main__":
         args.tolerance_count = int(input('Min # of challengers that can choose not to respond: (Default 1)').strip()) or 1
     if not args.private_key:
         args.private_key = input('Please enter the private key of the payer: ').strip() or ''
+    if not args.prover:
+        args.prover = input('Please enter the prover to challenge: ').strip() or ''
     if not args.project_name:
         args.project_name = input('Please enter the prover''s project name to challenge: ').strip().lower() or ''
-    if not args.prover and not args.project_name:
-        args.prover = input('Please enter the prover to challenge: ').strip() or ''
 
 
 

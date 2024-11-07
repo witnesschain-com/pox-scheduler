@@ -151,3 +151,22 @@ def get_statistics(session,api_config, proof_type):
         return None   
     else :
         return response.json()["result"]
+
+def get_challenge_status(session,api_config, proof_type, challenge_id):
+
+    payload = {
+                    "challenge_id": challenge_id
+    }
+
+    response = session.post(
+                                url     = f"{api_config['api_url']}/{proof_type}/challenge-status-dcl",
+                                data    = json.dumps(payload),
+                                verify  = SSL_CONTEXT.check_hostname, 
+                                timeout = TIMEOUT_SECS
+                            )
+    if response.status_code != 200:
+        logger.error(response)
+        session = None
+        return None   
+    else :
+        return response.json()["result"]
