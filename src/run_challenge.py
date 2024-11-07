@@ -34,7 +34,6 @@ def submit_on_chain_request_for_pob_challenge(
                                           tolerance, 
                                           bandwidth
                                         ):
-    print("Pob called")
     connection_to_rpc = connect_to_rpc(chain_config["rpc_url"])
 
     if not connection_to_rpc:
@@ -118,7 +117,6 @@ def submit_on_chain_request_for_pol_challenge(
                                             proof_config["attribute_ids"],
                                             [challenge_info]
                                         )
-    print(receipt)
     logs = contract.events.RequestProcessed().process_receipt(receipt)
 
     request_id = 0
@@ -131,7 +129,7 @@ def submit_on_chain_request_for_pol_challenge(
     return request_id, new_challenges
 
 
-def main(config_file, proof_type,private_key,prover_to_challenge,challenger_count=1,tolerance_count=0, ):
+def main(config_file, proof_type,private_key,prover_to_challenge,challenger_count=1,tolerance_count=0,project_name='' ):
 
     config = Config(config_file)
         
@@ -169,8 +167,10 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
             return None
         logger.info('Login successful')
 
+
         # Step 3a: Get Session
         print("Getting session info: ", session.cookies.get_dict())
+
 
         # Step 3b: Get Userinfo
         result = get_user_info(session, api_config, proof_type)
@@ -185,14 +185,19 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
 
         
         # Step 5: Request challenge for each prover
-        for prover in provers["provers"]: 
+        for prover in provers["provers"]:
             prover_id = prover["id"].split("/")[1]
-            print(prover_id)
             is_ip_v6 = True if prover["id"].split("/")[0] == "IPv6" else False
             if proof_type == 'pol':
                 latitude = int(prover["claims"]["latitude"] * 10**18)
                 longitude = int(prover["claims"]["longitude"] * 10**18)
-                if prover_id.lower() == prover_to_challenge.lower():
+                print(prover_id,int(prover["claims"]["latitude"]),int(prover["claims"]["longitude"] ))
+                if (project_name and prover["projectName"].lower() == project_name) \
+                   or ( prover_to_challenge and
+                        (
+                            prover_id.lower() == prover_to_challenge.lower() \
+                            or prover_to_challenge.lower() == 'all')
+                        ) :
                     request_id, challenges = submit_on_chain_request_for_pol_challenge(
                                                                                         account,
                                                                                         chain_config,
@@ -249,6 +254,7 @@ if __name__ == "__main__":
     parser.add_argument('--tolerance_count', type=int, default=1,help='Minimum # of challengers that should participate : (default: 1) ')
     parser.add_argument('--private_key', type=str, help='Private key of the payer : ')
     parser.add_argument('--prover', type=str, help='Prover''s address to challenge : ')
+    parser.add_argument('--project_name', type=str, help='Prover''s project name : ')
 
     
 
@@ -264,7 +270,11 @@ if __name__ == "__main__":
         args.tolerance_count = int(input('Min # of challengers that can choose not to respond: (Default 1)').strip()) or 1
     if not args.private_key:
         args.private_key = input('Please enter the private key of the payer: ').strip() or ''
-    if not args.prover:
+    if not args.project_name:
+        args.project_name = input('Please enter the prover''s project name to challenge: ').strip().lower() or ''
+    if not args.prover and not args.project_name:
         args.prover = input('Please enter the prover to challenge: ').strip() or ''
 
-    main(args.config_file, args.proof_type,args.private_key,args.prover,args.challenger_count,args.tolerance_count,)
+
+
+    main(args.config_file, args.proof_type,args.private_key,args.prover,args.challenger_count,args.tolerance_count,args.project_name)
