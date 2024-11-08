@@ -131,17 +131,14 @@ def submit_on_chain_request_for_pol_challenge(
 
     return request_id, new_challenges
 
-def should_run_for_prover(prover, project_name=None, prover_to_challenge=None):
+def should_run_for_prover(prover, prover_id, project_name=None, prover_to_challenge=None):
     # If project name is provided, check if it matches
     if project_name:
         return prover["projectName"].lower() == project_name.lower()
-    
     # If prover_to_challenge is provided, check if it's 'all' or matches specific prover
     if prover_to_challenge:
-        prover_id = prover.get("id", "").lower()  # Assuming prover ID is stored in 'id' field
         return (prover_to_challenge.lower() == 'all' or 
-                prover_id == prover_to_challenge.lower())
-    
+                prover_id.lower() == prover_to_challenge.lower())
     return False
 
 
@@ -204,22 +201,23 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
         for prover in provers["provers"]:
             prover_id = prover["id"].split("/")[1]
             is_ip_v6 = True if prover["id"].split("/")[0] == "IPv6" else False
-            if proof_type == 'pol':
-                latitude = int(prover["claims"]["latitude"] * 10**18)
-                longitude = int(prover["claims"]["longitude"] * 10**18)
-                
-                if should_run_for_prover(prover, project_name, prover_to_challenge):
+            if proof_type == 'pol' \
+               and should_run_for_prover(prover, prover_id, project_name, prover_to_challenge) :
+                try:
+                    latitude = int(prover["claims"]["latitude"] * 10**18)
+                    longitude = int(prover["claims"]["longitude"] * 10**18)
+                    
                     request_id, challenges = submit_on_chain_request_for_pol_challenge(
-                                                                                        account,
-                                                                                        chain_config,
-                                                                                        proof_config,
-                                                                                        prover_id,
-                                                                                        is_ip_v6,
-                                                                                        challenger_count,
-                                                                                        tolerance_count,
-                                                                                        latitude,
-                                                                                        longitude
-                                                                                    )
+                                                                                            account,
+                                                                                            chain_config,
+                                                                                            proof_config,
+                                                                                            prover_id,
+                                                                                            is_ip_v6,
+                                                                                            challenger_count,
+                                                                                            tolerance_count,
+                                                                                            latitude,
+                                                                                            longitude
+                                                                                        )
                     logger.info(f'Request ID: {request_id} and challenges :{challenges}')
 
                     for challenge in challenges:
@@ -235,6 +233,11 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
                                     time.sleep(POLL_STATUS_SECONDS)
                                     response = get_challenge_status(session, api_config, proof_type, challenge_id)
                                     logger.info(f'Status of challenge: { { "challenge_id":challenge_id,"status":response["state"] }}')
+                except KeyError:
+                    pass
+                except Exception as e:
+                    logger.info("Error triggering for:" + prover_id)
+                    logger.error(e)
             else:
                 try:
                     bandwidth = int(prover["claims"]["downlink_bandwidth"])
@@ -272,7 +275,7 @@ if __name__ == "__main__":
     parser.add_argument('--tolerance_count', type=int, default=1,help='Minimum # of challengers that should participate : (default: 1)')
     parser.add_argument('--private_key', type=str, help='Private key of the payer : ')
     parser.add_argument('--prover', type=str, default='all', help='Prover''s address to challenge : (default: all )')
-    parser.add_argument('--project_name', type=str, default='all', help='Prover''s project name : ')
+    parser.add_argument('--project_name', type=str, default='', help='Prover''s project name : ')
 
     
 
