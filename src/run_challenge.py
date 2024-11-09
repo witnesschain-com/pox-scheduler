@@ -239,12 +239,12 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
                                 logger.info(f'Status of challenge: {response}')
                                 if response:
                                     challenge_id = response["result"]["challenge_id"]
-                                    #response = get_challenge_status(session, api_config, proof_type, challenge_id)
+                                    response = get_challenge_status(session, api_config, proof_type, challenge_id)
                                     logger.info(f'Status of challenge: {response}')
-                                    #while response["state"] not in ["ENDED_SUCCESSFULLY","ENDED_WITH_PARTIAL_SUCCESS", "ERROR_NOT_ENOUGH_CHALLENGERS","ERROR_ENDED_WITH_FAILURE"]:
-                                    time.sleep(POLL_STATUS_SECONDS)
-                                    #response = get_challenge_status(session, api_config, proof_type, challenge_id)
-                                    #logger.info(f'Status of challenge: { { "challenge_id":challenge_id,"status":response["state"] }}')
+                                    while response["state"] not in ["ENDED_SUCCESSFULLY","ENDED_WITH_PARTIAL_SUCCESS", "ERROR_NOT_ENOUGH_CHALLENGERS","ERROR_ENDED_WITH_FAILURE"]:
+                                        time.sleep(POLL_STATUS_SECONDS)
+                                        response = get_challenge_status(session, api_config, proof_type, challenge_id)
+                                        logger.info(f'Status of challenge: { { "challenge_id":challenge_id,"status":response["state"] }}')
                 else:
                         bandwidth = int(prover["claims"]["downlink_bandwidth"])
                         if prover_id == prover_to_challenge:
