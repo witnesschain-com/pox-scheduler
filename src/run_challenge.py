@@ -11,9 +11,10 @@ from hexbytes import HexBytes
 
 import logging
 import time
+from datetime import datetime, timedelta
 
 LOGPATH = "./"
-POLL_STATUS_SECONDS = 10
+POLL_STATUS_SECONDS = 30
 
 LOGNAME = LOGPATH+"pox_schedule.log"
 # Configure the logging
@@ -77,6 +78,15 @@ def submit_on_chain_request_for_pob_challenge(
         new_challenges = log['args']['newChallenges']
 
     return request_id, new_challenges
+
+def is_alive_yet (last_alive):
+    if last_alive:
+        date_obj = datetime.fromisoformat(last_alive.replace('Z', '+00:00'))
+        current_time = datetime.now(date_obj.tzinfo)
+        time_difference = current_time - date_obj
+        print(time_difference)
+        return time_difference < timedelta(minutes=120)
+    return False
 
 def submit_on_chain_request_for_pol_challenge(
                                           account, 
@@ -162,7 +172,7 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
         pre_login_payload = create_pre_login_payload(account.address,proof_config,account_config,proof_type)
         message = get_pre_login_message(session, api_config, proof_type, pre_login_payload)
         if not message:
-            logger.error('Pre-login successful')
+            logger.error('Pre-login failed: ')
             return None 
         logger.info('Pre-login successful')
 
@@ -199,73 +209,70 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
         
         # Step 5: Request challenge for each prover
         for prover in provers["provers"]:
-            prover_id = prover["id"].split("/")[1]
-            is_ip_v6 = True if prover["id"].split("/")[0] == "IPv6" else False
-            if proof_type == 'pol' \
-               and should_run_for_prover(prover, prover_id, project_name, prover_to_challenge) :
-                try:
-                    latitude = int(prover["claims"]["latitude"] * 10**18)
-                    longitude = int(prover["claims"]["longitude"] * 10**18)
-                    
-                    request_id, challenges = submit_on_chain_request_for_pol_challenge(
-                                                                                            account,
-                                                                                            chain_config,
-                                                                                            proof_config,
-                                                                                            prover_id,
-                                                                                            is_ip_v6,
-                                                                                            challenger_count,
-                                                                                            tolerance_count,
-                                                                                            latitude,
-                                                                                            longitude
-                                                                                        )
-                    logger.info(f'Request ID: {request_id} and challenges :{challenges}')
-
-                    for challenge in challenges:
-                        if challenge:
-                            logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
-                            response = request_challenge(session, api_config, proof_type, prover["id"], challenge)
-                            logger.info(f'Status of challenge: {response}')
-                            if response:
-                                challenge_id = response["result"]["challenge_id"]
-                                response = get_challenge_status(session, api_config, proof_type, challenge_id)
-                                logger.info(f'Status of challenge: {response}')
-                                while response["state"] not in ["ENDED_SUCCESSFULLY","ENDED_WITH_PARTIAL_SUCCESS", "ERROR_NOT_ENOUGH_CHALLENGERS","ERROR_ENDED_WITH_FAILURE"]:
-                                    time.sleep(POLL_STATUS_SECONDS)
-                                    response = get_challenge_status(session, api_config, proof_type, challenge_id)
-                                    logger.info(f'Status of challenge: { { "challenge_id":challenge_id,"status":response["state"] }}')
-                except KeyError:
-                    pass
-                except Exception as e:
-                    logger.info("Error triggering for:" + prover_id)
-                    logger.error(e)
-            else:
-                try:
-                    bandwidth = int(prover["claims"]["downlink_bandwidth"])
-                    if prover_id == prover_to_challenge:
-
-                        request_id, challenges = submit_on_chain_request_for_pob_challenge(
-                                                                                            account,
-                                                                                            chain_config,
-                                                                                            proof_config,
-                                                                                            prover_id,
-                                                                                            is_ip_v6,
-                                                                                            challenger_count,
-                                                                                            tolerance_count,
-                                                                                            bandwidth
-                                                                                        )
+            try:
+                prover_id = prover["id"].split("/")[1]
+                is_ip_v6 = True if prover["id"].split("/")[0] == "IPv6" else False
+                print(prover_id, should_run_for_prover(prover, prover_id, project_name, prover_to_challenge), is_alive_yet(prover["last_alive"]), prover["last_alive"])
+                if proof_type == 'pol' \
+                and should_run_for_prover(prover, prover_id, project_name, prover_to_challenge) \
+                and is_alive_yet(prover["last_alive"]):
+                        latitude = int(prover["claims"]["latitude"] * 10**18)
+                        longitude = int(prover["claims"]["longitude"] * 10**18)
+                        
+                        request_id, challenges = submit_on_chain_request_for_pol_challenge(
+                                                                                                account,
+                                                                                                chain_config,
+                                                                                                proof_config,
+                                                                                                prover_id,
+                                                                                                is_ip_v6,
+                                                                                                challenger_count,
+                                                                                                tolerance_count,
+                                                                                                latitude,
+                                                                                                longitude
+                                                                                            )
                         logger.info(f'Request ID: {request_id} and challenges :{challenges}')
 
                         for challenge in challenges:
                             if challenge:
                                 logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
-                                response = request_challenge(session, api_config, proof_type, prover["id"], challenge,"downlink")
-                            if response:
+                                response = request_challenge(session, api_config, proof_type, prover["id"], challenge)
                                 logger.info(f'Status of challenge: {response}')
-                except KeyError:
-                    pass
-                except Exception as e:
-                    logger.info("Error triggering for:", prover)
-                    logger.error(e)
+                                if response:
+                                    challenge_id = response["result"]["challenge_id"]
+                                    #response = get_challenge_status(session, api_config, proof_type, challenge_id)
+                                    logger.info(f'Status of challenge: {response}')
+                                    #while response["state"] not in ["ENDED_SUCCESSFULLY","ENDED_WITH_PARTIAL_SUCCESS", "ERROR_NOT_ENOUGH_CHALLENGERS","ERROR_ENDED_WITH_FAILURE"]:
+                                    time.sleep(POLL_STATUS_SECONDS)
+                                    #response = get_challenge_status(session, api_config, proof_type, challenge_id)
+                                    #logger.info(f'Status of challenge: { { "challenge_id":challenge_id,"status":response["state"] }}')
+                else:
+                        bandwidth = int(prover["claims"]["downlink_bandwidth"])
+                        if prover_id == prover_to_challenge:
+
+                            request_id, challenges = submit_on_chain_request_for_pob_challenge(
+                                                                                                account,
+                                                                                                chain_config,
+                                                                                                proof_config,
+                                                                                                prover_id,
+                                                                                                is_ip_v6,
+                                                                                                challenger_count,
+                                                                                                tolerance_count,
+                                                                                                bandwidth
+                                                                                            )
+                            logger.info(f'Request ID: {request_id} and challenges :{challenges}')
+
+                            for challenge in challenges:
+                                if challenge:
+                                    logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
+                                    response = request_challenge(session, api_config, proof_type, prover["id"], challenge,"downlink")
+                                if response:
+                                    logger.info(f'Status of challenge: {response}')
+            except KeyError:
+                pass
+            except Exception as e:
+                logger.info("Error triggering for:", prover)
+                logger.error(e)
+                pass
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Pass configuration file , proof type, number of challengers and tolerance level')

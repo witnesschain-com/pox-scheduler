@@ -47,25 +47,32 @@ def get_pre_login_message(session, api_config, proof_type, payload):
                                 verify  = SSL_CONTEXT.check_hostname, 
                                 timeout = TIMEOUT_SECS
                             )
+    
     if response.status_code != 200:
+        logger.error(response.reason)
         session = None
         return None
     return response.json()["result"]["message"]
 
 
 def login(session,api_config, proof_type,payload):
-    response = session.post(
-                                url     = f"{api_config['api_url']}/{proof_type}/login",  
-                                data    = json.dumps(payload),
-                                verify  = SSL_CONTEXT.check_hostname, 
-                                timeout = TIMEOUT_SECS
-                            )
-    if response.status_code == 200 and response.json()["result"]["success"]:
-       return response
-    else: 
-        logger.error(response)
-        session = None
-        return None
+    try:
+        response = session.post(
+                                    url     = f"{api_config['api_url']}/{proof_type}/login",  
+                                    data    = json.dumps(payload),
+                                    verify  = SSL_CONTEXT.check_hostname, 
+                                    timeout = TIMEOUT_SECS
+                                )
+        if response.status_code == 200 and response.json()["result"]["success"]:
+            return response
+        else: 
+            logger.error(response)
+            session = None
+            return None
+    except KeyError:
+        pass
+    except Exception as e:
+        logger.error(e)
 
 def get_provers(session,api_config, proof_type):
     response = session.post(
@@ -165,7 +172,7 @@ def get_challenge_status(session,api_config, proof_type, challenge_id):
                                 timeout = TIMEOUT_SECS
                             )
     if response.status_code != 200:
-        logger.error(response)
+        logger.error(response.status_code,response.reason)
         session = None
         return None   
     else :
