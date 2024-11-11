@@ -1,7 +1,8 @@
 {
     "api": {
         "api_url": "https://api.witnesschain.com/proof/v1",
-        "content_type_json": {"content-type": "application/json"}
+        "content_type_json": {"content-type": "application/json"},
+        "poll_seconds":30
     },
     "chain": {
         "rpc_url": "https://blue-orangutan-rpc.eu-north-2.gateway.fm",
@@ -22,7 +23,8 @@
                     "challenge_timeout_secs_minimum_default": 1000000000,
                     "attribute_ids": ["pol-v1.witnesschain.com"],
                     "role": "payer",
-                    "project_name": "WITNESS_CHAIN"
+                    "project_name": "WITNESS_CHAIN",
+                    "alive_check_minutes":15
             },
             "pob": {
                 "number_challengers_default": 2,
@@ -30,7 +32,8 @@
                 "challenge_timeout_secs_minimum_default": 1000000000,
                 "attribute_ids": ["pob-v1.witnesschain.com"],
                 "role": "payer",
-                "project_name": "WITNESS_CHAIN"
+                "project_name": "WITNESS_CHAIN",
+                "alive_check_minutes":3
         }
     },
     "account": {

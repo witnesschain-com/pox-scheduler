@@ -177,3 +177,20 @@ def get_challenge_status(session,api_config, proof_type, challenge_id):
         return None   
     else :
         return response.json()["result"]
+
+def get_challenger(session,api_config, proof_type,challenger_id):
+    response = session.post(
+                                url     = f"{api_config['api_url']}/{proof_type}/challenger",
+                                json    = { 
+                                       "id": challenger_id
+                                    }
+                                   ,
+                                verify  = SSL_CONTEXT.check_hostname, 
+                                timeout = TIMEOUT_SECS
+                            )
+    if response.status_code != 200:
+        logger.error(response.reason)
+        session = None
+        return None
+    else :
+        return response.json()["result"]

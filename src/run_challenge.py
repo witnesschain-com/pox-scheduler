@@ -14,7 +14,6 @@ import time
 from datetime import datetime, timedelta
 
 LOGPATH = "./"
-POLL_STATUS_SECONDS = 30
 
 LOGNAME = LOGPATH+"pox_schedule.log"
 # Configure the logging
@@ -79,13 +78,12 @@ def submit_on_chain_request_for_pob_challenge(
 
     return request_id, new_challenges
 
-def is_alive_yet (last_alive):
+def is_alive_yet (last_alive,time_delta):
     if last_alive:
         date_obj = datetime.fromisoformat(last_alive.replace('Z', '+00:00'))
         current_time = datetime.now(date_obj.tzinfo)
         time_difference = current_time - date_obj
-        print(time_difference)
-        return time_difference < timedelta(minutes=120)
+        return time_difference < timedelta(minutes=time_delta)
     return False
 
 def submit_on_chain_request_for_pol_challenge(
@@ -161,6 +159,8 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
     proof_config = config.get_proof_config(proof_type)
     account_config = config.get_account_config()
 
+    poll_seconds = api_config["poll_seconds"]
+
     validate_inputs(proof_config)
     
     account = get_web3_account(private_key)
@@ -206,16 +206,17 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
             return None
         logger.info(f'Got Provers: {len(provers["provers"])}')
 
-        
+        time_delta = proof_config["alive_check_minutes"]
         # Step 5: Request challenge for each prover
         for prover in provers["provers"]:
             try:
                 prover_id = prover["id"].split("/")[1]
                 is_ip_v6 = True if prover["id"].split("/")[0] == "IPv6" else False
-                print(prover_id, should_run_for_prover(prover, prover_id, project_name, prover_to_challenge), is_alive_yet(prover["last_alive"]), prover["last_alive"])
+                challenger = get_challenger(session, api_config, proof_type,prover["id"])
                 if proof_type == 'pol' \
-                and should_run_for_prover(prover, prover_id, project_name, prover_to_challenge) \
-                and is_alive_yet(prover["last_alive"]):
+                    and should_run_for_prover(prover, prover_id, project_name, prover_to_challenge) \
+                    and is_alive_yet(prover["last_alive"],time_delta) \
+                    and not challenger:
                         latitude = int(prover["claims"]["latitude"] * 10**18)
                         longitude = int(prover["claims"]["longitude"] * 10**18)
                         
@@ -241,8 +242,10 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
                                     challenge_id = response["result"]["challenge_id"]
                                     response = get_challenge_status(session, api_config, proof_type, challenge_id)
                                     logger.info(f'Status of challenge: {response}')
-                                    while response["state"] not in ["ENDED_SUCCESSFULLY","ENDED_WITH_PARTIAL_SUCCESS", "ERROR_NOT_ENOUGH_CHALLENGERS","ERROR_ENDED_WITH_FAILURE"]:
-                                        time.sleep(POLL_STATUS_SECONDS)
+                                    retries = 0
+                                    while response["state"] not in ["ENDED_SUCCESSFULLY","ENDED_WITH_PARTIAL_SUCCESS", "ERROR_NOT_ENOUGH_CHALLENGERS","ERROR_ENDED_WITH_FAILURE"] and retries < 5:
+                                        retries += 1
+                                        time.sleep(poll_seconds)
                                         response = get_challenge_status(session, api_config, proof_type, challenge_id)
                                         logger.info(f'Status of challenge: { { "challenge_id":challenge_id,"status":response["state"] }}')
                 else:
