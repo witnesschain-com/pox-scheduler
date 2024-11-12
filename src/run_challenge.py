@@ -13,6 +13,8 @@ import logging
 import time
 from datetime import datetime, timedelta
 
+import random
+
 LOGPATH = "./"
 
 LOGNAME = LOGPATH+"pox_schedule.log"
@@ -201,22 +203,25 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
 
         # Step 4: Get provers
         provers = get_provers(session, api_config, proof_type)
+        provers = provers["provers"]
         if not provers:
             logger.error('Error: No provers found')
             return None
-        logger.info(f'Got Provers: {len(provers["provers"])}')
+        logger.info(f'Got Provers: {len(provers)}')
 
         time_delta = proof_config["alive_check_minutes"]
+        
+        random.shuffle(provers)
+        
         # Step 5: Request challenge for each prover
-        for prover in provers["provers"]:
+        for prover in provers:
             try:
                 prover_id = prover["id"].split("/")[1]
                 is_ip_v6 = True if prover["id"].split("/")[0] == "IPv6" else False
-                challenger = get_challenger(session, api_config, proof_type,prover["id"])
+                #challenger = get_challenger(session, api_config, proof_type,prover["id"])
                 if proof_type == 'pol' \
                     and should_run_for_prover(prover, prover_id, project_name, prover_to_challenge) \
-                    and is_alive_yet(prover["last_alive"],time_delta) \
-                    and not challenger:
+                    and is_alive_yet(prover["last_alive"],time_delta):
                         latitude = int(prover["claims"]["latitude"] * 10**18)
                         longitude = int(prover["claims"]["longitude"] * 10**18)
                         
@@ -231,45 +236,24 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
                                                                                                 latitude,
                                                                                                 longitude
                                                                                             )
-                        logger.info(f'Request ID: {request_id} and challenges :{challenges}')
-
                         for challenge in challenges:
                             if challenge:
-                                logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
+                                logger.info(f'Triggering challenge for Prover: {prover["id"]} last alive at {prover["last_alive"]} with challenge_id: {challenge} and on-chain Request ID: {request_id}')
                                 response = request_challenge(session, api_config, proof_type, prover["id"], challenge)
-                                logger.info(f'Status of challenge: {response}')
                                 if response:
+                                    logger.info(f'Status of challenge request for challenge_id : {challenge} - {response["result"]["challenge_status"]}')
                                     challenge_id = response["result"]["challenge_id"]
-                                    response = get_challenge_status(session, api_config, proof_type, challenge_id)
-                                    logger.info(f'Status of challenge: {response}')
                                     retries = 0
-                                    while response["state"] not in ["ENDED_SUCCESSFULLY","ENDED_WITH_PARTIAL_SUCCESS", "ERROR_NOT_ENOUGH_CHALLENGERS","ERROR_ENDED_WITH_FAILURE"] and retries < 5:
+                                    challenge_ended, status = has_challenge_ended(session, api_config, proof_type, challenge_id)
+                                    # Loop till either the challenge has ended or max retries count has reached
+                                    while not challenge_ended and retries < api_config["retries"]:
+                                        challenge_ended, status = has_challenge_ended(session, api_config, proof_type, challenge_id)
                                         retries += 1
                                         time.sleep(poll_seconds)
-                                        response = get_challenge_status(session, api_config, proof_type, challenge_id)
-                                        logger.info(f'Status of challenge: { { "challenge_id":challenge_id,"status":response["state"] }}')
+                                        logger.info(f'Status of challenge request for challenge_id : {challenge} - {status}')
+                                    
                 else:
-                        bandwidth = int(prover["claims"]["downlink_bandwidth"])
-                        if prover_id == prover_to_challenge:
-
-                            request_id, challenges = submit_on_chain_request_for_pob_challenge(
-                                                                                                account,
-                                                                                                chain_config,
-                                                                                                proof_config,
-                                                                                                prover_id,
-                                                                                                is_ip_v6,
-                                                                                                challenger_count,
-                                                                                                tolerance_count,
-                                                                                                bandwidth
-                                                                                            )
-                            logger.info(f'Request ID: {request_id} and challenges :{challenges}')
-
-                            for challenge in challenges:
-                                if challenge:
-                                    logger.info(f'Triggering challenge for Prover: {prover["id"]} with challenge_id: {challenge}')
-                                    response = request_challenge(session, api_config, proof_type, prover["id"], challenge,"downlink")
-                                if response:
-                                    logger.info(f'Status of challenge: {response}')
+                    logger.info(f'Skipping challenge for Prover: {prover["id"]} from {prover["projectName"].lower()} . Last alive at {prover["last_alive"]}')
             except KeyError:
                 pass
             except Exception as e:

@@ -7,6 +7,11 @@ import logging
 
 LOGPATH = "./"
 LOGNAME = LOGPATH+"pox_schedule.log"
+CHALLENGE_END_STATES =  [   "ENDED_SUCCESSFULLY",
+                            "ENDED_WITH_PARTIAL_SUCCESS", 
+                            "ERROR_NOT_ENOUGH_CHALLENGERS",
+                            "ERROR_ENDED_WITH_FAILURE"
+                        ]
 # Configure the logging
 logging.basicConfig(filename=LOGNAME,
                     filemode='a',
@@ -136,12 +141,10 @@ def request_challenge(session,api_config, proof_type, prover, challenge_id, chal
                                 timeout = TIMEOUT_SECS
                             )
         if response.status_code != 200:
-            logger.error(f'Request failed: {response.status_code} : {response.reason} {response.text} ')
-            session = None
+            logger.error(f'Status of challenge trigger for challenge_id: {challenge_id} - {response.text}')
             return None
     except requests.exceptions.RequestException as e:
         logger.error(f'Request failed: {e},  {e.message}')
-        session = None
         return None
     return response.json()
 
@@ -173,7 +176,6 @@ def get_challenge_status(session,api_config, proof_type, challenge_id):
                             )
     if response.status_code != 200:
         logger.error(response.status_code,response.reason)
-        session = None
         return None   
     else :
         return response.json()["result"]
@@ -190,7 +192,20 @@ def get_challenger(session,api_config, proof_type,challenger_id):
                             )
     if response.status_code != 200:
         logger.error(response.reason)
-        session = None
         return None
     else :
         return response.json()["result"]
+
+
+def has_challenge_ended(session,api_config, proof_type,challenge_id):
+    try:
+        response = get_challenge_status(session, api_config, proof_type, challenge_id)
+        if not response:
+            return (True,"FAILED")
+        current_state = response["state"]
+        has_ended = current_state in CHALLENGE_END_STATES
+        return has_ended, current_state
+    except Exception as e:
+        logger.error(e)
+        return (True,"FAILED")
+    
