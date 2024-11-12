@@ -2,6 +2,7 @@ import requests
 import json
 import ssl
 import os
+from datetime import datetime, timedelta
 
 import logging
 
@@ -209,3 +210,10 @@ def has_challenge_ended(session,api_config, proof_type,challenge_id):
         logger.error(e)
         return (True,"FAILED")
     
+def is_alive_yet (last_alive,time_delta):
+    if last_alive:
+        date_obj = datetime.fromisoformat(last_alive.replace('Z', '+00:00'))
+        current_time = datetime.now(date_obj.tzinfo)
+        time_difference = current_time - date_obj
+        return time_difference < timedelta(minutes=time_delta)
+    return False

@@ -11,7 +11,6 @@ from hexbytes import HexBytes
 
 import logging
 import time
-from datetime import datetime, timedelta
 
 import random
 
@@ -28,65 +27,6 @@ logger = logging.getLogger(__name__)
 
 full_path = os.path.abspath(__file__)
 SRC_PATH=os.path.dirname(full_path)+"/"
-
-def submit_on_chain_request_for_pob_challenge(
-                                          account, 
-                                          chain_config, 
-                                          proof_config, 
-                                          prover, 
-                                          is_ip_v6, 
-                                          challengers_count, 
-                                          tolerance, 
-                                          bandwidth
-                                        ):
-    connection_to_rpc = connect_to_rpc(chain_config["rpc_url"])
-
-    if not connection_to_rpc:
-        logger.error(f"Unable to connect to {chain_config['rpc_url']}")
-
-    challenge_info = eth_abi.encode (
-        ["address","address","uint8","bool","uint256","uint256","int256"],
-        [
-            chain_config["prover_registry"]["proxy"], 
-            prover,
-            0,
-            is_ip_v6,
-            challengers_count if challengers_count else proof_config["number_challengers_default"],
-            bandwidth,
-            tolerance if tolerance else proof_config["challengers_tolerance_default"],
-        ]
-    )
-
-    receipt,contract = submit_transaction(  
-                                            chain_config["chain_id"], 
-                                            connection_to_rpc,
-                                            chain_config["gas_limit"],
-                                            account,
-                                            chain_config["request_handler"]["proxy"],
-                                            SRC_PATH+chain_config["request_handler"]["abi_file_name_with_path"],
-                                            "submitRequest",
-                                            proof_config["challenge_timeout_secs_minimum_default"],
-                                            proof_config["attribute_ids"],
-                                            [challenge_info]
-                                        )
-    logs = contract.events.RequestProcessed().process_receipt(receipt)
-
-    request_id = 0
-    new_challenges = []
-
-    for log in logs:
-        request_id     = log['args']['requestId']
-        new_challenges = log['args']['newChallenges']
-
-    return request_id, new_challenges
-
-def is_alive_yet (last_alive,time_delta):
-    if last_alive:
-        date_obj = datetime.fromisoformat(last_alive.replace('Z', '+00:00'))
-        current_time = datetime.now(date_obj.tzinfo)
-        time_difference = current_time - date_obj
-        return time_difference < timedelta(minutes=time_delta)
-    return False
 
 def submit_on_chain_request_for_pol_challenge(
                                           account, 
@@ -142,15 +82,69 @@ def submit_on_chain_request_for_pol_challenge(
     return request_id, new_challenges
 
 def should_run_for_prover(prover, prover_id, project_name=None, prover_to_challenge=None):
-    # If project name is provided, check if it matches
     if project_name:
         return prover["projectName"].lower() == project_name.lower()
-    # If prover_to_challenge is provided, check if it's 'all' or matches specific prover
     if prover_to_challenge:
-        return (prover_to_challenge.lower() == 'all' or 
-                prover_id.lower() == prover_to_challenge.lower())
+        return prover_to_challenge.lower() in ('all', prover_id.lower())
     return False
 
+def handle_challenge(session, api_config, proof_type, challenge, prover_id, request_id, poll_seconds):
+    response = request_challenge(session, api_config, proof_type, prover_id, challenge)
+    if not response:
+        return
+
+    logger.info(f'Challenge {challenge} for Prover {prover_id} (Request ID: {request_id}) - Status: {response["result"]["challenge_status"]}')
+    
+    challenge_id = response["result"]["challenge_id"]
+    retries = 0
+    
+    while retries < api_config["retries"]:
+        challenge_ended, status = has_challenge_ended(session, api_config, proof_type, challenge_id)
+        logger.info(f'Status of challenge request for challenge_id : {challenge} - {status}')
+        if challenge_ended:
+            break
+        retries += 1
+        time.sleep(poll_seconds)
+    
+def process_prover( proof_type, 
+                    prover, 
+                    prover_to_challenge, 
+                    project_name , 
+                    session, 
+                    api_config, 
+                    account, 
+                    chain_config, 
+                    proof_config, 
+                    challenger_count, 
+                    tolerance_count, 
+                    poll_seconds,
+                    last_alive):
+    try:
+        prover_id = prover["id"].split("/")[1]
+        is_ipv6 = prover["id"].split("/")[0] == "IPv6"
+        
+        if not (proof_type == 'pol' and 
+                should_run_for_prover(prover, prover_id, project_name, prover_to_challenge) and 
+                is_alive_yet(prover["last_alive"], last_alive)):
+            logger.info(f'Skipping challenge for Prover: {prover["id"]} from {prover["projectName"].lower()}. Last alive at {prover["last_alive"]}')
+            return
+
+        latitude = int(prover["claims"]["latitude"] * 10**18)
+        longitude = int(prover["claims"]["longitude"] * 10**18)
+        
+        request_id, challenges = submit_on_chain_request_for_pol_challenge(
+            account, chain_config, proof_config, prover_id, is_ipv6,
+            challenger_count, tolerance_count, latitude, longitude
+        )
+
+        for challenge in filter(None, challenges):
+            logger.info(f'Triggering challenge for Prover: {prover["id"]} last alive at {prover["last_alive"]} with challenge_id: {challenge} and on-chain Request ID: {request_id}')
+            handle_challenge(session, api_config, proof_type, challenge, prover["id"], request_id, poll_seconds)
+
+    except KeyError:
+        pass
+    except Exception as e:
+        logger.error(f"Error triggering for {prover}: {e}")
 
 def main(config_file, proof_type,private_key,prover_to_challenge,challenger_count=1,tolerance_count=0,project_name='' ):
 
@@ -162,6 +156,8 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
     account_config = config.get_account_config()
 
     poll_seconds = api_config["poll_seconds"]
+    LAST_ALIVE = proof_config["alive_check_minutes"]
+
 
     validate_inputs(proof_config)
     
@@ -193,73 +189,18 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
         logger.info('Login successful')
 
 
-        # Step 3a: Get Session
-        print("Getting session info: ", session.cookies.get_dict())
-
-
-        # Step 3b: Get Userinfo
-        result = get_user_info(session, api_config, proof_type)
-        print("Getting user info: ", result)
-
         # Step 4: Get provers
-        provers = get_provers(session, api_config, proof_type)
-        provers = provers["provers"]
+        provers = get_provers(session, api_config, proof_type)["provers"]
         if not provers:
             logger.error('Error: No provers found')
             return None
-        logger.info(f'Got Provers: {len(provers)}')
-
-        time_delta = proof_config["alive_check_minutes"]
-        
+        logger.info(f'Got Provers: {len(provers)}')        
         random.shuffle(provers)
         
         # Step 5: Request challenge for each prover
         for prover in provers:
-            try:
-                prover_id = prover["id"].split("/")[1]
-                is_ip_v6 = True if prover["id"].split("/")[0] == "IPv6" else False
-                #challenger = get_challenger(session, api_config, proof_type,prover["id"])
-                if proof_type == 'pol' \
-                    and should_run_for_prover(prover, prover_id, project_name, prover_to_challenge) \
-                    and is_alive_yet(prover["last_alive"],time_delta):
-                        latitude = int(prover["claims"]["latitude"] * 10**18)
-                        longitude = int(prover["claims"]["longitude"] * 10**18)
-                        
-                        request_id, challenges = submit_on_chain_request_for_pol_challenge(
-                                                                                                account,
-                                                                                                chain_config,
-                                                                                                proof_config,
-                                                                                                prover_id,
-                                                                                                is_ip_v6,
-                                                                                                challenger_count,
-                                                                                                tolerance_count,
-                                                                                                latitude,
-                                                                                                longitude
-                                                                                            )
-                        for challenge in challenges:
-                            if challenge:
-                                logger.info(f'Triggering challenge for Prover: {prover["id"]} last alive at {prover["last_alive"]} with challenge_id: {challenge} and on-chain Request ID: {request_id}')
-                                response = request_challenge(session, api_config, proof_type, prover["id"], challenge)
-                                if response:
-                                    logger.info(f'Status of challenge request for challenge_id : {challenge} - {response["result"]["challenge_status"]}')
-                                    challenge_id = response["result"]["challenge_id"]
-                                    retries = 0
-                                    challenge_ended, status = has_challenge_ended(session, api_config, proof_type, challenge_id)
-                                    # Loop till either the challenge has ended or max retries count has reached
-                                    while not challenge_ended and retries < api_config["retries"]:
-                                        challenge_ended, status = has_challenge_ended(session, api_config, proof_type, challenge_id)
-                                        retries += 1
-                                        time.sleep(poll_seconds)
-                                        logger.info(f'Status of challenge request for challenge_id : {challenge} - {status}')
-                                    
-                else:
-                    logger.info(f'Skipping challenge for Prover: {prover["id"]} from {prover["projectName"].lower()} . Last alive at {prover["last_alive"]}')
-            except KeyError:
-                pass
-            except Exception as e:
-                logger.info("Error triggering for:", prover)
-                logger.error(e)
-                pass
+            process_prover(proof_type, prover, prover_to_challenge, project_name, session, api_config, account, chain_config, proof_config, 
+                        challenger_count, tolerance_count, poll_seconds, LAST_ALIVE)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Pass configuration file , proof type, number of challengers and tolerance level')
@@ -278,7 +219,7 @@ if __name__ == "__main__":
     if not args.config_file:
         args.config_file = input('Please enter the path to the configuration file (default: config/config.json): ').strip() or 'config/config.json'
     if not args.proof_type:
-        args.proof_type = input('Please enter the type of proof (pol/pob) to run (default: pol): ').strip() or 'pol'
+        args.proof_type = input('Please enter the type of proof to run (default: pol): ').strip() or 'pol'
     if not args.challenger_count:
         args.challenger_count = int(input('Max # of challengers that can participate : (Default 2)').strip()) or 2
     if not args.tolerance_count:
