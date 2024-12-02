@@ -217,3 +217,21 @@ def is_alive_yet (last_alive,time_delta):
         time_difference = current_time - date_obj
         return time_difference < timedelta(minutes=time_delta)
     return False
+
+def get_prover(session,api_config, proof_type,prover_id):
+    response = session.post(
+                                url     = f"{api_config['api_url']}/{proof_type}/prover",
+                                data    = json.dumps(
+                                    { 
+                                        "id":prover_id
+                                    }
+                                    ),
+                                verify  = SSL_CONTEXT.check_hostname, 
+                                timeout = TIMEOUT_SECS
+                            )
+    if response.status_code != 200:
+        logger.error(response)
+        session = None
+        return None   
+    else :
+        return response.json()["result"]

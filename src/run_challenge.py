@@ -83,28 +83,47 @@ def submit_on_chain_request_for_pol_challenge(
 
 def should_run_for_prover(prover, prover_id, project_name=None, prover_to_challenge=None):
     if project_name:
-        return prover["projectName"].lower() == project_name.lower()
+        return prover["projectName"].lower() == project_name.lower() or prover["projectName"].startswith(project_name.lower())
     if prover_to_challenge:
         return prover_to_challenge.lower() in ('all', prover_id.lower())
     return False
 
-def handle_challenge(session, api_config, proof_type, challenge, prover_id, request_id, poll_seconds):
-    response = request_challenge(session, api_config, proof_type, prover_id, challenge)
-    if not response:
-        return
+def handle_challenge(session, api_config, proof_type, challenge_id, prover_id, request_id, poll_seconds):
+    """
+    Handle a challenge request and monitor its status until completion.
+    
+    Args:
+        session: The API session object
+        api_config: Configuration dictionary containing API settings
+        proof_type: Type of proof being requested
+        challenge_id: The challenge_id data
+        prover_id: Unique identifier for the prover
+        request_id: Unique identifier for this request
+        poll_seconds: Number of seconds to wait between status checks
+    """
 
-    logger.info(f'Challenge {challenge} for Prover {prover_id} (Request ID: {request_id}) - Status: {response["result"]["challenge_status"]}')
+    # Submit the initial challenge request to the API
+    response = request_challenge(session, api_config, proof_type, prover_id, challenge_id)
+    if not response:
+        return  # Exit if the initial request failed
+
+    # Log the initial challenge status
+    logger.info(f'Challenge {challenge_id} for Prover {prover_id} (Request ID: {request_id}) - Status: {response["result"]["challenge_status"]}')
     
-    challenge_id = response["result"]["challenge_id"]
     retries = 0
-    
+
+    # Poll for challenge completion, respecting the configured retry limit
     while retries < api_config["retries"]:
+        # Check if the challenge has been completed
         challenge_ended, status = has_challenge_ended(session, api_config, proof_type, challenge_id)
-        logger.info(f'Status of challenge request for challenge_id : {challenge} - {status}')
+
+        logger.info(f'Status of challenge request for challenge_id : {challenge_id} - {status}')
+        
         if challenge_ended:
-            break
-        retries += 1
-        time.sleep(poll_seconds)
+            return  # Exit the polling loop if the challenge is complete
+
+        retries += 1  # Increment retry counter
+        time.sleep(poll_seconds)  # Wait before next status check
     
 def process_prover( proof_type, 
                     prover, 
@@ -137,9 +156,9 @@ def process_prover( proof_type,
             challenger_count, tolerance_count, latitude, longitude
         )
 
-        for challenge in filter(None, challenges):
-            logger.info(f'Triggering challenge for Prover: {prover["id"]} last alive at {prover["last_alive"]} with challenge_id: {challenge} and on-chain Request ID: {request_id}')
-            handle_challenge(session, api_config, proof_type, challenge, prover["id"], request_id, poll_seconds)
+        for challenge_id in filter(None, challenges):
+            logger.info(f'Triggering challenge for Prover: {prover["id"]} last alive at {prover["last_alive"]} with challenge_id: {challenge_id} and on-chain Request ID: {request_id}')
+            handle_challenge(session, api_config, proof_type, challenge_id, prover["id"], request_id, poll_seconds)
 
     except KeyError:
         pass
@@ -198,7 +217,9 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
         random.shuffle(provers)
         
         # Step 5: Request challenge for each prover
-        for prover in provers:
+        matching_provers = list(filter(lambda p: p["id"].split("/")[1] == prover_to_challenge, provers)) if prover_to_challenge != 'all' else provers
+
+        for prover in matching_provers:
             process_prover(proof_type, prover, prover_to_challenge, project_name, session, api_config, account, chain_config, proof_config, 
                         challenger_count, tolerance_count, poll_seconds, LAST_ALIVE)
 
@@ -225,10 +246,10 @@ if __name__ == "__main__":
     if not args.tolerance_count:
         args.tolerance_count = int(input('Min # of challengers that can choose not to respond: (Default 1)').strip()) or 1
     if not args.private_key:
-        args.private_key = input('Please enter the private key of the payer: ').strip() or ''
+        args.private_key = input('Please enter the private key of the payer: ').strip() or None
     if not args.prover:
-        args.prover = input('Please enter the prover to challenge: ').strip() or ''
-    if not args.project_name:
+        args.prover = input('Please enter the prover to challenge: ').strip() or None
+    if not args.prover and not args.project_name:
         args.project_name = input('Please enter the prover''s project name to challenge: ').strip().lower() or ''
 
 
