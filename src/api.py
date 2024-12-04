@@ -122,7 +122,7 @@ def request_challenge(session,api_config, proof_type, prover, challenge_id, chal
             return {
                     "challenge_id": challenge_id,
                     "prover": prover,
-                    "challenge_type": challenge_type
+                    "challenge_type": "downlink"
                 }
         elif proof_type == "pol":
             return {
@@ -170,7 +170,7 @@ def get_challenge_status(session,api_config, proof_type, challenge_id):
     }
 
     response = session.post(
-                                url     = f"{api_config['api_url']}/{proof_type}/challenge-status-dcl",
+                                url     = f"{api_config['api_url']}/downlink/challenge-status-dcl",
                                 data    = json.dumps(payload),
                                 verify  = SSL_CONTEXT.check_hostname, 
                                 timeout = TIMEOUT_SECS

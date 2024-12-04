@@ -25,7 +25,7 @@
                     "attribute_ids": ["pol-v1.witnesschain.com"],
                     "role": "payer",
                     "project_name": "WITNESS_CHAIN",
-                    "alive_check_minutes":240
+                    "alive_check_minutes": 2
             },
             "pob": {
                 "number_challengers_default": 2,
@@ -34,7 +34,7 @@
                 "attribute_ids": ["pob-v1.witnesschain.com"],
                 "role": "payer",
                 "project_name": "WITNESS_CHAIN",
-                "alive_check_minutes":2
+                "alive_check_minutes": 2
         }
     },
     "account": {

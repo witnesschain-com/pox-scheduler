@@ -52,3 +52,11 @@ python run_challenge.py --config_file config/config.json --proof_type pol --chal
 #### Notes
 Ensure that the ```config.json``` file exists and contains the correct configuration settings.
 The script will prompt for any missing arguments if they are not provided.
+
+
+## NodeJS Examples
+
+#### Run a submitted challenge
+```sh
+npm run challenge -- --challenge-id 444 --prover <prover-pubkey>
+```
