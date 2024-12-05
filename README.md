@@ -48,6 +48,25 @@ python run_challenge.py --config_file config/config.json --proof_type pol --chal
     --challenger_count: The number of challengers (default: 2).
     --private_key: Private Key of the account triggering the challenge
     --prover: Prover address (0x...)
+    --project_name: Project Name (pingpong, eigenlayer) (optional)
+
+
+#### Notes
+Ensure that the ```config.json``` file exists and contains the correct configuration settings.
+The script will prompt for any missing arguments if they are not provided.
+
+```sh
+# Sample script to call a PoB challenge
+python run_challenge.py --config_file config/config.json --proof_type pob --challenger_count 5 --private_key $PRIVATE_KEY --prover <PROVER_ADDRESS_TO_RUN_CHALLENGE_FOR> --bandwidth_challenge_type <0/1>
+```
+#### Arguments
+    --config_file: The path to the configuration file (default: config/config.json).
+    --proof_type: The type of proof to retrieve from the configuration (default: pol).
+    --challenger_count: The number of challengers (default: 2).
+    --private_key: Private Key of the account triggering the challenge
+    --prover: Prover address (0x...)
+    --bandwidth_challenge_type: 0 -> Downlink, 1 -> Uplink
+
 
 #### Notes
 Ensure that the ```config.json``` file exists and contains the correct configuration settings.
