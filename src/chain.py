@@ -55,3 +55,4 @@ def submit_transaction(chain_id, connection_rpc, gas_limit, caller_account, cont
     receipt = connection_rpc.eth.wait_for_transaction_receipt(transaction_receipt)
 
     return receipt,contract
+    
