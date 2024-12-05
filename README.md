@@ -46,10 +46,10 @@ python run_challenge.py --config_file config/config.json --proof_type pol --chal
 ```
 #### Arguments
     --config_file: The path to the configuration file (default: config/config.json).
-    --proof_type: The type of proof to retrieve from the configuration (default: pol).
+    --proof_type: The type of proof to retrieve from the configuration (pol or pob ; default: pol).
     --challenger_count: The number of challengers (default: 2).
-    --private_key: Private Key of the account triggering the challenge
-    --prover: Prover address (0x...)
+    --private_key: Private Key of the account triggering the challenge (ECDSA Key starting with 0x)
+    --prover: Prover address - Ethereum wallet (0x...)
     --project_name: Project Name (pingpong, eigenlayer) (optional)
 
 
@@ -65,10 +65,10 @@ python run_challenge.py --config_file config/config.json --proof_type pob --chal
 ```
 #### Arguments
     --config_file: The path to the configuration file (default: config/config.json).
-    --proof_type: The type of proof to retrieve from the configuration (default: pol).
+    --proof_type: The type of proof to retrieve from the configuration (pol or pob ; default: pol).
     --challenger_count: The number of challengers (default: 2).
-    --private_key: Private Key of the account triggering the challenge
-    --prover: Prover address (0x...)
+    --private_key: Private Key of the account triggering the challenge  (ECDSA Key starting with 0x)
+    --prover: Prover address - Ethereum wallet (0x...)
     --bandwidth_challenge_type: 0 -> Downlink, 1 -> Uplink
 
 
