@@ -36,6 +36,8 @@ cd src
 ```
 
 ### 3. Run the Script
+#### 3a. PoL Challenge
+
 Run the ```run_challenge.py``` script with the required arguments to trigger a PoL Challenge. You can ignore warnings by using the -W ignore flag.
 
 ```sh
@@ -54,6 +56,8 @@ python run_challenge.py --config_file config/config.json --proof_type pol --chal
 #### Notes
 Ensure that the ```config.json``` file exists and contains the correct configuration settings.
 The script will prompt for any missing arguments if they are not provided.
+
+#### 3b. PoB Challenge
 
 ```sh
 # Sample script to call a PoB challenge
