@@ -36,6 +36,8 @@ cd src
 ```
 
 ### 3. Run the Script
+#### 3a. PoL Challenge
+
 Run the ```run_challenge.py``` script with the required arguments to trigger a PoL Challenge. You can ignore warnings by using the -W ignore flag.
 
 ```sh
@@ -44,10 +46,31 @@ python run_challenge.py --config_file config/config.json --proof_type pol --chal
 ```
 #### Arguments
     --config_file: The path to the configuration file (default: config/config.json).
-    --proof_type: The type of proof to retrieve from the configuration (default: pol).
+    --proof_type: The type of proof to retrieve from the configuration (pol or pob ; default: pol).
     --challenger_count: The number of challengers (default: 2).
-    --private_key: Private Key of the account triggering the challenge
-    --prover: Prover address (0x...)
+    --private_key: Private Key of the account triggering the challenge (ECDSA Key starting with 0x)
+    --prover: Prover address - Ethereum wallet (0x...)
+    --project_name: Project Name (pingpong, eigenlayer) (optional)
+
+
+#### Notes
+Ensure that the ```config.json``` file exists and contains the correct configuration settings.
+The script will prompt for any missing arguments if they are not provided.
+
+#### 3b. PoB Challenge
+
+```sh
+# Sample script to call a PoB challenge
+python run_challenge.py --config_file config/config.json --proof_type pob --challenger_count 5 --private_key $PRIVATE_KEY --prover <PROVER_ADDRESS_TO_RUN_CHALLENGE_FOR> --bandwidth_challenge_type <0/1>
+```
+#### Arguments
+    --config_file: The path to the configuration file (default: config/config.json).
+    --proof_type: The type of proof to retrieve from the configuration (pol or pob ; default: pol).
+    --challenger_count: The number of challengers (default: 2).
+    --private_key: Private Key of the account triggering the challenge  (ECDSA Key starting with 0x)
+    --prover: Prover address - Ethereum wallet (0x...)
+    --bandwidth_challenge_type: 0 -> Downlink, 1 -> Uplink
+
 
 #### Notes
 Ensure that the ```config.json``` file exists and contains the correct configuration settings.
