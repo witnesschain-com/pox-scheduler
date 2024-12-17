@@ -29,14 +29,21 @@ export PRIVATE_KEY=<private_key>
 ```
 > **Alert:** Make sure to replace `<private_key>`
 
-### 2. Navigate to the Source Directory
+### 2. Install the packages
+Install the packages using pip
+```sh
+pip install -r requirements.txt
+```
+
+
+### 3. Navigate to the Source Directory
 Change directory to the src directory where the script is located.
 ```sh
 cd src
 ```
 
-### 3. Run the Script
-#### 3a. PoL Challenge
+### 4. Run the Script
+#### 4a. PoL Challenge
 
 Run the ```run_challenge.py``` script with the required arguments to trigger a PoL Challenge. You can ignore warnings by using the -W ignore flag.
 
@@ -57,7 +64,7 @@ python challenge_network.py --config_file config/config.json --proof_type pol --
 Ensure that the ```config.json``` file exists and contains the correct configuration settings.
 The script will prompt for any missing arguments if they are not provided.
 
-#### 3b. PoB Challenge
+#### 4b. PoB Challenge
 
 ```sh
 # Sample script to call a PoB challenge
