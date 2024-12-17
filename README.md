@@ -42,7 +42,7 @@ Run the ```run_challenge.py``` script with the required arguments to trigger a P
 
 ```sh
 # Sample script to call a PoL challenge
-python run_challenge.py --config_file config/config.json --proof_type pol --challenger_count 2 --private_key $PRIVATE_KEY --prover <PROVER_ADDRESS_TO_RUN_CHALLENGE_FOR>
+python challenge_network.py --config_file config/config.json --proof_type pol --challenger_count 2 --private_key $PRIVATE_KEY --prover <PROVER_ADDRESS_TO_RUN_CHALLENGE_FOR>
 ```
 #### Arguments
     --config_file: The path to the configuration file (default: config/config.json).
@@ -61,7 +61,7 @@ The script will prompt for any missing arguments if they are not provided.
 
 ```sh
 # Sample script to call a PoB challenge
-python run_challenge.py --config_file config/config.json --proof_type pob --challenger_count 5 --private_key $PRIVATE_KEY --prover <PROVER_ADDRESS_TO_RUN_CHALLENGE_FOR> --bandwidth_challenge_type <0/1>
+python challenge_network.py --config_file config/config.json --proof_type pob --challenger_count 5 --private_key $PRIVATE_KEY --prover <PROVER_ADDRESS_TO_RUN_CHALLENGE_FOR> --bandwidth_challenge_type <0/1>
 ```
 #### Arguments
     --config_file: The path to the configuration file (default: config/config.json).
