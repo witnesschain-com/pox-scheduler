@@ -9,7 +9,6 @@ It also includes an example command and notes to ensure proper setup and executi
 ## Prerequisites
 
 - Python 3.6 or higher
-- Ideally 50 Challengers running to challenge the Prover
 
 ## Setup Guide
 
@@ -45,7 +44,7 @@ cd src
 ### 4. Run the Script
 #### 4a. PoL Challenge
 
-Run the ```run_challenge.py``` script with the required arguments to trigger a PoL Challenge. You can ignore warnings by using the -W ignore flag.
+Run the ```challenge_network.py``` script with the required arguments to trigger a PoL Challenge. You can ignore warnings by using the -W ignore flag.
 
 ```sh
 # Sample script to call a PoL challenge
