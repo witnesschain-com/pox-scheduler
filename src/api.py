@@ -72,7 +72,7 @@ def login(session,api_config, proof_type,payload):
         if response.status_code == 200 and response.json()["result"]["success"]:
             return response
         else: 
-            logger.error(response)
+            logger.error(response.reason)
             session = None
             return None
     except KeyError:
