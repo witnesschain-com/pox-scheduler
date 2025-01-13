@@ -113,17 +113,11 @@
             {
                 "indexed": true,
                 "internalType": "address",
-                "name": "operator",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "challenger",
+                "name": "prover",
                 "type": "address"
             }
         ],
-        "name": "ChallengerDeregistered",
+        "name": "DePINProverDeregistered",
         "type": "event"
     },
     {
@@ -132,17 +126,42 @@
             {
                 "indexed": true,
                 "internalType": "address",
-                "name": "operator",
+                "name": "prover",
                 "type": "address"
             },
             {
                 "indexed": true,
                 "internalType": "address",
-                "name": "challenger",
+                "name": "participationKey",
                 "type": "address"
             }
         ],
-        "name": "ChallengerRegistered",
+        "name": "DePINProverParticipationKeyRegistered",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "prover",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "operator",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "enum IProverRegistry.DePINProverStatus",
+                "name": "proverStatus",
+                "type": "uint8"
+            }
+        ],
+        "name": "DePINProverRegistered",
         "type": "event"
     },
     {
@@ -156,38 +175,6 @@
             }
         ],
         "name": "Initialized",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "operator",
-                "type": "address"
-            }
-        ],
-        "name": "OperatorDeregistered",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "address[]",
-                "name": "operator",
-                "type": "address[]"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "blockNumber",
-                "type": "uint256"
-            }
-        ],
-        "name": "OperatorsWhiteListed",
         "type": "event"
     },
     {
@@ -265,7 +252,7 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "challenger",
+                "name": "prover",
                 "type": "address"
             },
             {
@@ -284,7 +271,7 @@
                 "type": "uint256"
             }
         ],
-        "name": "calculateChallengerRegistrationDigestHash",
+        "name": "calculateProverRegistrationDigestHash",
         "outputs": [
             {
                 "internalType": "bytes32",
@@ -316,12 +303,36 @@
                 "type": "address"
             },
             {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "dePINOperatorProversStatus",
+        "outputs": [
+            {
+                "internalType": "enum IProverRegistry.DePINProverStatus",
+                "name": "",
+                "type": "uint8"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
                 "internalType": "bytes32",
                 "name": "",
                 "type": "bytes32"
             }
         ],
-        "name": "challengerSaltUsed",
+        "name": "dePINProverSaltUsed",
         "outputs": [
             {
                 "internalType": "bool",
@@ -340,10 +351,10 @@
                 "type": "address"
             }
         ],
-        "name": "challengersStatus",
+        "name": "dePINProversStatus",
         "outputs": [
             {
-                "internalType": "enum Types.Status",
+                "internalType": "enum IProverRegistry.DePINProverStatus",
                 "name": "",
                 "type": "uint8"
             }
@@ -355,18 +366,18 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "challenger",
+                "name": "prover",
                 "type": "address"
             }
         ],
-        "name": "deRegisterChallenger",
+        "name": "deRegisterProver",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
     },
     {
         "inputs": [],
-        "name": "domainSeperator",
+        "name": "domainSeparator",
         "outputs": [
             {
                 "internalType": "bytes32",
@@ -381,35 +392,16 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "challenger",
+                "name": "prover",
                 "type": "address"
             }
         ],
-        "name": "getChallengerStatus",
+        "name": "getProverStatus",
         "outputs": [
             {
-                "internalType": "enum Types.Status",
+                "internalType": "enum IProverRegistry.DePINProverStatus",
                 "name": "",
                 "type": "uint8"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "challenger",
-                "type": "address"
-            }
-        ],
-        "name": "getOperator",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "operator",
-                "type": "address"
             }
         ],
         "stateMutability": "view",
@@ -426,35 +418,21 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "challenger",
+                "name": "prover",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "operator",
                 "type": "address"
             }
         ],
-        "name": "isValidChallenger",
+        "name": "isRegisteredProver",
         "outputs": [
             {
                 "internalType": "bool",
                 "name": "",
                 "type": "bool"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "operatorAllowlist",
-        "outputs": [
-            {
-                "internalType": "enum Types.Status",
-                "name": "",
-                "type": "uint8"
             }
         ],
         "stateMutability": "view",
@@ -510,7 +488,7 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "challenger",
+                "name": "prover",
                 "type": "address"
             },
             {
@@ -525,11 +503,11 @@
             },
             {
                 "internalType": "bytes",
-                "name": "challengerSignature",
+                "name": "proverSignature",
                 "type": "bytes"
             }
         ],
-        "name": "registerChallenger",
+        "name": "registerProver",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"

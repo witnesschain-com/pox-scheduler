@@ -6,10 +6,10 @@ class Config:
             self.config = json.load(file)
         
     def get_api_config(self):
-        return self.config['api']
+        return self.config['api']['mainnet']
 
     def get_chain_config(self):
-        return self.config['chain']
+        return self.config['chain']['mainnet']
 
     def get_proof_config(self,proof):
         return self.config['proofs'][proof]
