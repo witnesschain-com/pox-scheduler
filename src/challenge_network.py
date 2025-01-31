@@ -2,7 +2,8 @@ import os
 import argparse
 import time
 import random
-import requests
+#import requests
+from custom_session import CustomSession
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional, Tuple
 
@@ -26,7 +27,7 @@ class ChallengeNetwork:
         self.logger = Logger()
 
     def _authenticate(self, 
-                     session: requests.Session, 
+                     session: CustomSession, 
                      api_config: Dict[str, Any],
                      proof_config: Dict[str, Any],
                      account_config: Dict[str, Any],
@@ -81,7 +82,7 @@ class ChallengeNetwork:
             return False
 
     def _get_provers(self, 
-                     session: requests.Session, 
+                     session: CustomSession, 
                      api_config: Dict[str, Any],
                      proof_type: str,
                      prover_to_challenge: str) -> List[Dict[str, Any]]:
@@ -131,7 +132,8 @@ class ChallengeNetwork:
         validate_inputs(proof_config)
         account = get_web3_account(private_key)
 
-        with requests.Session() as session:
+        with CustomSession() as session:
+            session.verify = True
             session.headers.update(api_config["content_type_json"])
             
             if not self._authenticate(session, api_config, proof_config, 

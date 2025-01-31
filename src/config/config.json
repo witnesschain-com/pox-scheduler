@@ -1,7 +1,7 @@
 {
     "api": {
         "testnet": {
-            "api_url": "https://api.witnesschain.com/proof/v1",
+            "api_url": "https://testnet.witnesschain.com/proof/v1",
             "content_type_json": {"content-type": "application/json"},
             "poll_seconds":30,
             "retries":5

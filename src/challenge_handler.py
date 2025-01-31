@@ -1,12 +1,14 @@
 import time
-import requests
+#import requests
+from custom_session import CustomSession
+
 from typing import Dict, List, Any, Optional, Tuple
 
 from api import request_challenge, has_challenge_ended
 from logger import Logger
 
 class ChallengeHandler:
-    def __init__(self, session: requests.Session, api_config: Dict[str, Any]):
+    def __init__(self, session: CustomSession, api_config: Dict[str, Any]):
         self.session = session
         self.api_config = api_config
         self.logger = Logger()
