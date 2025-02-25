@@ -5,7 +5,7 @@ import argparse
 
 from chain import *
 from config.config import Config
-from api import * 
+from api import *
 from proof_validations import *
 from hexbytes import HexBytes
 
@@ -42,9 +42,9 @@ def get_rpc(chain_config):
     return None
 
 def get_pol_encoding(
-            chain_config, 
-            proof_config, 
-            prover, 
+            chain_config,
+            proof_config,
+            prover,
             is_ip_v6,
             challengers_count,
             tolerance,
@@ -54,7 +54,7 @@ def get_pol_encoding(
     return eth_abi.encode (
         ["address","address","bool","uint256","uint256","int256","int256"],
         [
-            chain_config["prover_registry"]["proxy"], 
+            chain_config["prover_registry"]["proxy"],
             prover,
             is_ip_v6,
             challengers_count if challengers_count else proof_config["number_challengers_default"],
@@ -77,7 +77,7 @@ def get_pob_encoding (
     return eth_abi.encode (
         ["address","address","uint","bool","uint256","uint256","uint256"],
         [
-            chain_config["prover_registry"]["proxy"], 
+            chain_config["prover_registry"]["proxy"],
             prover,
             bandwidth_challenge_type,
             is_ip_v6,
@@ -94,8 +94,8 @@ def prepare_and_submit_request_transaction (
                         account,
                         challenge_info
                         ):
-        receipt,contract = submit_transaction(  
-                                            chain_config["chain_id"], 
+        receipt,contract = submit_transaction(
+                                            chain_config["chain_id"],
                                             connection_to_rpc,
                                             chain_config["gas_limit"],
                                             account,
@@ -121,26 +121,26 @@ def process_logs(receipt,contract):
 
     return request_id, new_challenges
 
-    
+
 def submit_on_chain_request_for_pol_challenge(
-                                          account, 
-                                          chain_config, 
-                                          proof_config, 
-                                          prover, 
-                                          is_ip_v6, 
-                                          challengers_count, 
-                                          tolerance, 
-                                          latitude, 
+                                          account,
+                                          chain_config,
+                                          proof_config,
+                                          prover,
+                                          is_ip_v6,
+                                          challengers_count,
+                                          tolerance,
+                                          latitude,
                                           longitude
                                         ):
     # Get RPC Connection
-    connection_to_rpc = get_rpc(chain_config)  
+    connection_to_rpc = get_rpc(chain_config)
 
     # Encodes PoL Challenge data into Ethereum ABI format
     challenge_info = get_pol_encoding (
-                                        chain_config, 
-                                        proof_config, 
-                                        prover, 
+                                        chain_config,
+                                        proof_config,
+                                        prover,
                                         is_ip_v6,
                                         challengers_count,
                                         tolerance,
@@ -156,7 +156,7 @@ def submit_on_chain_request_for_pol_challenge(
                                                                 account,
                                                                 challenge_info
                                                             )
-    
+
     # Processes the event logs to extract Request and Challenge Information
     request_id, new_challenges = process_logs(receipt,contract)
 
@@ -164,20 +164,20 @@ def submit_on_chain_request_for_pol_challenge(
 
 
 def submit_on_chain_request_for_pob_challenge(
-                                          account, 
-                                          chain_config, 
-                                          proof_config, 
-                                          prover, 
+                                          account,
+                                          chain_config,
+                                          proof_config,
+                                          prover,
                                           is_ip_v6,
                                           challengers_count,
                                           tolerance_count,
-                                          bandwidth_challenge_type, 
+                                          bandwidth_challenge_type,
                                           bandwidth
                                         ):
-    
+
     # Get RPC Connection
     print(prover)
-    connection_to_rpc =  get_rpc(chain_config)  
+    connection_to_rpc =  get_rpc(chain_config)
 
     # Encodes PoB Challenge data into Ethereum ABI format
     challenge_info    =  get_pob_encoding (
@@ -218,7 +218,7 @@ def should_run_for_prover(prover, prover_id, project_name=None, prover_to_challe
 def handle_challenge(session, api_config, proof_type, challenge_id, prover_id, request_id, poll_seconds, challenge_type):
     """
     Handle a challenge request and monitor its status until completion.
-    
+
     Args:
         session: The API session object
         api_config: Configuration dictionary containing API settings
@@ -236,7 +236,7 @@ def handle_challenge(session, api_config, proof_type, challenge_id, prover_id, r
 
     # Log the initial challenge status
     logger.info(f'Challenge {challenge_id} for Prover {prover_id} (Request ID: {request_id}) - Status: {response["result"]["challenge_status"]}')
-    
+
     retries = 0
 
     # Poll for challenge completion, respecting the configured retry limit
@@ -245,34 +245,34 @@ def handle_challenge(session, api_config, proof_type, challenge_id, prover_id, r
         challenge_ended, status = has_challenge_ended(session, api_config, proof_type, challenge_id)
 
         logger.info(f'Status of challenge request for challenge_id : {challenge_id} - {status}')
-        
+
         if challenge_ended:
             return  # Exit the polling loop if the challenge is complete
 
         retries += 1  # Increment retry counter
         time.sleep(poll_seconds)  # Wait before next status check
-    
-def process_prover( proof_type, 
-                    prover, 
-                    prover_to_challenge, 
-                    project_name , 
-                    session, 
-                    api_config, 
-                    account, 
-                    chain_config, 
-                    proof_config, 
-                    challenger_count, 
-                    tolerance_count, 
+
+def process_prover( proof_type,
+                    prover,
+                    prover_to_challenge,
+                    project_name ,
+                    session,
+                    api_config,
+                    account,
+                    chain_config,
+                    proof_config,
+                    challenger_count,
+                    tolerance_count,
                     poll_seconds,
                     last_alive,
                     bandwidth_challenge_type):
     try:
         prover_id = prover["id"].split("/")[1]
         is_ipv6 = prover["id"].split("/")[0] == "IPv6"
-        
+
         if not (
-                (proof_type == 'pol' or proof_type == 'pob')  and 
-                should_run_for_prover(prover, prover_id, project_name, prover_to_challenge) and 
+                (proof_type == 'pol' or proof_type == 'pob')  and
+                should_run_for_prover(prover, prover_id, project_name, prover_to_challenge) and
                 is_alive_yet(prover["last_alive"], last_alive)
                 ):
             logger.info(f'Skipping challenge for Prover: {prover["id"]} from {prover["projectName"].lower()}. Last alive at {prover["last_alive"]}')
@@ -281,29 +281,29 @@ def process_prover( proof_type,
         if proof_type == 'pol':
             latitude = int(prover["claims"]["latitude"] * 10**18)
             longitude = int(prover["claims"]["longitude"] * 10**18)
-            
+
             request_id, challenges = submit_on_chain_request_for_pol_challenge(
-                                                                                account, 
-                                                                                chain_config, 
-                                                                                proof_config, 
-                                                                                prover_id, 
+                                                                                account,
+                                                                                chain_config,
+                                                                                proof_config,
+                                                                                prover_id,
                                                                                 is_ipv6,
-                                                                                challenger_count, 
-                                                                                tolerance_count, 
-                                                                                latitude, 
+                                                                                challenger_count,
+                                                                                tolerance_count,
+                                                                                latitude,
                                                                                 longitude
             )
         elif proof_type == 'pob':
             bandwidth = prover["claims"]["uplink_bandwidth"] if bandwidth_challenge_type else prover["claims"]["downlink_bandwidth"]
             request_id, challenges = submit_on_chain_request_for_pob_challenge (
-                                                                                account, 
-                                                                                chain_config, 
-                                                                                proof_config, 
-                                                                                prover_id, 
+                                                                                account,
+                                                                                chain_config,
+                                                                                proof_config,
+                                                                                prover_id,
                                                                                 is_ipv6,
                                                                                 challenger_count,
                                                                                 tolerance_count,
-                                                                                bandwidth_challenge_type, 
+                                                                                bandwidth_challenge_type,
                                                                                 bandwidth
                                                                                 )
         else:
@@ -319,7 +319,7 @@ def process_prover( proof_type,
 def main(config_file, proof_type,private_key,prover_to_challenge,challenger_count=1,tolerance_count=0,project_name='',bandwidth_challenge_type=0):
 
     config = Config(config_file)
-        
+
     api_config = config.get_api_config()
     chain_config = config.get_chain_config()
     proof_config = config.get_proof_config(proof_type)
@@ -330,9 +330,9 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
 
 
     validate_inputs(proof_config)
-    
+
     account = get_web3_account(private_key)
-    
+
     with requests.Session() as session:
         session.headers.update(api_config["content_type_json"])
 
@@ -341,7 +341,7 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
         message = get_pre_login_message(session, api_config, proof_type, pre_login_payload)
         if not message:
             logger.error('Pre-login failed: ')
-            return None 
+            return None
         logger.info('Pre-login successful')
 
 
@@ -364,14 +364,14 @@ def main(config_file, proof_type,private_key,prover_to_challenge,challenger_coun
         if not provers:
             logger.error('Error: No provers found')
             return None
-        logger.info(f'Got Provers: {len(provers)}')        
+        logger.info(f'Got Provers: {len(provers)}')
         random.shuffle(provers)
-        
+
         # Step 5: Request challenge for each prover
         matching_provers = list(filter(lambda p: p["id"].split("/")[1] == prover_to_challenge, provers)) if prover_to_challenge != 'all' else provers
 
         for prover in matching_provers:
-            process_prover(proof_type, prover, prover_to_challenge, project_name, session, api_config, account, chain_config, proof_config, 
+            process_prover(proof_type, prover, prover_to_challenge, project_name, session, api_config, account, chain_config, proof_config,
                         challenger_count, tolerance_count, poll_seconds, LAST_ALIVE,bandwidth_challenge_type)
 
 if __name__ == "__main__":
@@ -394,7 +394,9 @@ if __name__ == "__main__":
     if not args.challenger_count:
         args.challenger_count = int(input('Max # of challengers that can participate : (Default 2)').strip()) or 2
     if not args.tolerance_count:
-        args.tolerance_count = int(input('Min # of challengers that can choose not to respond: (Default 1)').strip()) or 1
+        args.tolerance_count = int(input('Min # of challengers that can choose not to respond: (Default 1)').strip())
+        if args.tolerance_count == None:
+            args.tolerance_count = 1
     if not args.private_key:
         args.private_key = input('Please enter the private key of the payer: ').strip() or None
     if not args.prover:
