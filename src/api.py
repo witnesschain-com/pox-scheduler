@@ -115,7 +115,7 @@ def get_user_info(session,api_config, proof_type):
 
 
 
-def request_challenge(session,api_config, proof_type, prover, challenge_id, challenge_type="NA"):
+def request_challenge(session,api_config, proof_type, prover, challenge_id, challenge_type="NA",challenger_count=1):
     
     def create_request_challenge_payload():
         if proof_type == "pob":
@@ -125,10 +125,10 @@ def request_challenge(session,api_config, proof_type, prover, challenge_id, chal
                     "challenge_type": challenge_type
                 }
         elif proof_type == "pol":
-            return {
-                    "challenge_id": challenge_id,
-                    "prover": prover
-                }
+            return {                                            
+                "prover"                : prover,                
+                "num_challengers"       : challenger_count        
+                }    
         else:
             return Exception("Invalid Proof type")
     
@@ -136,7 +136,7 @@ def request_challenge(session,api_config, proof_type, prover, challenge_id, chal
     
     try:
         response = session.post(
-                                url     = f"{api_config['api_url']}/{proof_type}/challenge-request-dcl",  
+                                url     = f"{api_config['api_url']}/{proof_type}/{api_config['challenge_trigger_end_point']}",  
                                 data    = json.dumps(payload),
                                 verify  = SSL_CONTEXT.check_hostname, 
                                 timeout = TIMEOUT_SECS
@@ -165,12 +165,14 @@ def get_statistics(session,api_config, proof_type):
 
 def get_challenge_status(session,api_config, proof_type, challenge_id):
 
+    print(challenge_id)
+
     payload = {
                     "challenge_id": challenge_id
     }
 
     response = session.post(
-                                url     = f"{api_config['api_url']}/{proof_type}/challenge-status-dcl",
+                                url     = f"{api_config['api_url']}/{proof_type}/challenge-status",
                                 data    = json.dumps(payload),
                                 verify  = SSL_CONTEXT.check_hostname, 
                                 timeout = TIMEOUT_SECS

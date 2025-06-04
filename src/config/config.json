@@ -4,40 +4,21 @@
             "api_url": "https://testnet.witnesschain.com/proof/v1",
             "content_type_json": {"content-type": "application/json"},
             "poll_seconds":30,
-            "retries":5
+            "retries":5,
+            "challenge_trigger_end_point": "challenge-request"
         },
         "mainnet": {
             "api_url": "https://mainnet.witnesschain.com/proof/v1",
             "content_type_json": {"content-type": "application/json"},
             "poll_seconds":30,
-            "retries":5
+            "retries":5,
+            "challenge_trigger_end_point": "challenge-request"
         }
+        
     },
     "chain": {
-        "testnet": {
-            "rpc_url": "https://blue-orangutan-rpc.eu-north-2.gateway.fm",
-            "chain_id": 1237146866,
-            "gas_limit": 1000000,
-            "request_handler" : {
-                "proxy": "0x8A02C91373929a4764F015309B072DC9C9Fabc49",
-                "abi_file_name_with_path": "abi/request_handler.abi"
-            },
-            "prover_registry" : {
-                "proxy": "0x91013d3CecE055603D8b1EE7DCB1f670f480fe24"
-            }
-        },
-        "mainnet": {
-            "rpc_url": "https://rpc.witnesschain.com",
-            "chain_id": 1702448187,
-            "gas_limit": 1000000,
-            "request_handler" : {
-                "proxy": "0x3105CB54f2708D1c9aA9829BEcE64097206df6C2",
-                "abi_file_name_with_path": "abi/request_handler.abi"
-            },
-            "prover_registry" : {
-                "proxy": "0xCdb30BE21A44fB111A48661ECc755B34a41C4e82"
-            }   
-        }
+        "testnet": {},
+        "mainnet": {}
     },
     "proofs": {
             "pol": {

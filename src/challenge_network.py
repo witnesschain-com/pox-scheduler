@@ -124,11 +124,16 @@ class ChallengeNetwork:
             return []
 
     def run(self, proof_type: str, private_key: str, **kwargs):
-        api_config = self.config.get_api_config()
-        chain_config = self.config.get_chain_config()
+        network = kwargs["network"]
+
+        if network not in ["testnet","mainnet"]:
+            raise Exception("invalid value for network", network)
+        
+        api_config = self.config.get_api_config(network)
+        chain_config = self.config.get_chain_config(network)
         proof_config = self.config.get_proof_config(proof_type)
         account_config = self.config.get_account_config()
-
+        
         validate_inputs(proof_config)
         account = get_web3_account(private_key)
 
@@ -179,7 +184,8 @@ def main():
         challenger_count=args.challenger_count,
         tolerance_count=args.tolerance_count,
         project_name=args.project_name,
-        bandwidth_challenge_type=args.bandwidth_challenge_type
+        bandwidth_challenge_type=args.bandwidth_challenge_type,
+        network=args.network,
     )
 
 if __name__ == "__main__":

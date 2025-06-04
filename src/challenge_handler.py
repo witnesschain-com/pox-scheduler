@@ -14,15 +14,18 @@ class ChallengeHandler:
         self.logger = Logger()
 
     def handle_challenge(self, proof_type: str, challenge_id: str, prover_id: str, 
-                        request_id: str, poll_seconds: int, challenge_type: str) -> None:
+                        request_id: str, poll_seconds: int, challenge_type: str,
+                        challenger_count: int = 1) -> None:
         response = request_challenge(self.session, self.api_config, proof_type, 
-                                  prover_id, challenge_id, challenge_type)
+                                  prover_id, challenge_id, challenge_type,challenger_count)
         if not response:
             return
 
-        self.logger.info(f'Challenge {challenge_id} for Prover {prover_id} '
-                        f'(Request ID: {request_id}) - Status: {response["result"]["challenge_status"]}')
+        self.logger.info(f'Challenge {response["result"]["challenge_id"]} for Prover {prover_id} '
+                        f'Status: {response["result"]["challenge_status"]}')
         
+        challenge_id = response["result"]["challenge_id"]
+        status = response["result"]["challenge_status"]
         retries = 0
         while retries < self.api_config["retries"]:
             challenge_ended, status = has_challenge_ended(self.session, self.api_config, 

@@ -157,7 +157,8 @@ class ProverProcessor:
             prover_id=prover["id"],
             request_id=request_id,
             poll_seconds=self.api_config["poll_seconds"],
-            challenge_type=challenge_type
+            challenge_type=challenge_type,
+            challenger_count = kwargs.get('challenger_count', 1)
         )
 
     def process_prover(self, proof_type: str, prover: Dict, **kwargs) -> None:
@@ -168,6 +169,7 @@ class ProverProcessor:
             if not self._validate_prover(proof_type, prover, prover_id, **kwargs):
                 return
 
+            '''
             challenge = ChallengeFactory.create_challenge(
                 proof_type,
                 self.chain_config,
@@ -180,6 +182,7 @@ class ProverProcessor:
                 kwargs['account'],
                 challenge.encode_challenge(prover_id, **challenge_params)
             )
+            
 
             if receipt.get("status") != 1:
                 self.logger.error(f'Challenge for Prover: {prover_id} failed. '
@@ -187,9 +190,9 @@ class ProverProcessor:
                 return
 
             request_id, challenges = challenge.process_logs(receipt, contract)
+            '''
 
-            for challenge_id in filter(None, challenges):
-                self._handle_challenge(proof_type, prover, challenge_id, request_id, **kwargs)
+            self._handle_challenge(proof_type, prover, None, None, **kwargs)
 
         except Exception as e:
             self.logger.error(f"Error processing prover {prover}: {e}")

@@ -23,6 +23,8 @@ class ArgumentParser:
                           help='Prover\'s project name : ')
         parser.add_argument('--bandwidth_challenge_type', type=int, default=0,
                           help='Bandwidth Challenge Type (Downlink: 0 (default), Uplink: 1) : ')
+        parser.add_argument('--network', type=str, default="testnet",
+                          help='Network to run on (testnet or mainnet) (default is testnet ): ')
         
         args = parser.parse_args()
         
@@ -43,5 +45,6 @@ class ArgumentParser:
             args.project_name = input('Please enter the prover\'s project name to challenge: ').strip().lower() or ''
         if args.proof_type.lower() == 'pob' and args.bandwidth_challenge_type is None:
             args.bandwidth_challenge_type = int(input('Please enter the Bandwidth Challenge Type (Downlink: 0 (Default), Uplink: 1): ').strip() or '0')
-        
+        if args.network.lower() not in ["testnet", "mainnet"]:
+            args.network = input('Please enter one of 2 options (mainnet or testnet):').strip() or 'testnet'
         return args
